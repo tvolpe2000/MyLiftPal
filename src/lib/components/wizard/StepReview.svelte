@@ -67,7 +67,7 @@
 				const { data: dayData, error: dayError } = await supabase
 					.from('workout_days')
 					.insert({
-						block_id: block.id,
+						training_block_id: block.id,
 						day_number: day.dayNumber,
 						name: day.name,
 						target_muscles: day.targetMuscles,
@@ -83,7 +83,7 @@
 				const slots = wizard.getExercisesForDay(day.id);
 				for (const slot of slots) {
 					const { error: slotError } = await supabase.from('exercise_slots').insert({
-						day_id: workoutDay.id,
+						workout_day_id: workoutDay.id,
 						exercise_id: slot.exerciseId,
 						slot_order: slot.slotOrder,
 						base_sets: slot.baseSets,
