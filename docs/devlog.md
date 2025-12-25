@@ -6,6 +6,41 @@ Chronological notes on development progress, sessions, and learnings.
 
 ## 2025-12-25
 
+### Session: Training Block Wizard & Bug Fixes
+
+**What was done:**
+- Implemented 4-step training block creation wizard (`/blocks/new`):
+  - Step 1: Basic info (name, weeks, days per week, time budget)
+  - Step 2: Configure workout days with names and target muscles
+  - Step 3: Add exercises with full-screen picker modal
+  - Step 4: Review summary with time estimates, save to database
+- Created wizard store (`wizardStore.svelte.ts`) for state management
+- Built exercise picker with search, muscle filter, and equipment filter
+- Pre-filters exercises by day's target muscles for better UX
+- Implemented blocks list page that fetches and displays training blocks
+- Fixed GitHub Issues #1, #2, #3:
+  - #1: Exercise picker modal overlay blocking content - fixed with z-index 9999 and full-screen modal
+  - #2: Muscle groups not passed from Step 2 to Step 3 - added pre-selection logic
+  - #3: Database column name mismatch - fixed `block_id` → `training_block_id`
+
+**Technical decisions:**
+- Wizard uses single-page architecture with client-side step navigation
+- Exercise picker is full-screen on mobile for better touch UX
+- Modal prevents body scroll when open using `:has()` CSS selector
+- Blocks page fetches with Supabase relation query for workout_days count
+
+**Files created:**
+- `src/lib/stores/wizardStore.svelte.ts`
+- `src/lib/types/wizard.ts`
+- `src/lib/components/wizard/*.svelte` (6 components)
+- `src/routes/blocks/new/+page.svelte`
+
+**Issues encountered:**
+- Modal z-index stacking context required very high z-index (9999)
+- Supabase insert required exact column names matching database schema
+
+---
+
 ### Session: Auth, Navigation, and Theming
 
 **What was done:**
