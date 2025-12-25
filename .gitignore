@@ -22,3 +22,13 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# AI Assistant Instructions (prevent prompt injection)
+CLAUDE.md
+.claude/
+.cursorrules
+.cursor/
+.github/copilot-instructions.md
+.windsurfrules
+GEMINI.md
+.gemini/
