@@ -15,7 +15,7 @@
 	}
 </script>
 
-<nav class="fixed bottom-0 left-0 right-0 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] safe-area-bottom md:hidden">
+<nav class="fixed bottom-0 left-0 right-0 z-40 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] safe-area-bottom md:hidden">
 	<div class="flex justify-around items-center h-16">
 		{#each navItems as item}
 			{@const active = isActive(item.href, $page.url.pathname)}

@@ -194,20 +194,25 @@
 	</div>
 </div>
 
-<!-- Exercise Picker Modal -->
+<!-- Exercise Picker Modal - Full screen on mobile -->
 {#if showPicker}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4"
+		class="exercise-picker-open fixed inset-0 z-[9999] flex flex-col"
 		onclick={closePicker}
 	>
+		<!-- Backdrop -->
+		<div class="absolute inset-0 bg-black/80"></div>
+
+		<!-- Modal Container - Full screen on mobile, centered on desktop -->
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
-			class="bg-[var(--color-bg-primary)] w-full max-w-lg rounded-xl flex flex-col max-h-[85vh] shadow-2xl"
+			class="relative flex-1 flex flex-col bg-[var(--color-bg-primary)] sm:m-auto sm:flex-initial sm:w-full sm:max-w-lg sm:max-h-[85vh] sm:rounded-xl sm:shadow-2xl overflow-hidden"
 			onclick={(e) => e.stopPropagation()}
 		>
+
 			<!-- Header -->
 			<div class="p-4 border-b border-[var(--color-border)] flex-shrink-0">
 				<div class="flex items-center justify-between mb-4">
@@ -361,3 +366,10 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	/* Prevent body scroll when modal is open */
+	:global(body:has(.exercise-picker-open)) {
+		overflow: hidden;
+	}
+</style>
