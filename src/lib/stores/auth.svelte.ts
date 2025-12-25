@@ -72,7 +72,8 @@ function createAuthStore() {
 			options: {
 				data: {
 					display_name: displayName
-				}
+				},
+				emailRedirectTo: `${window.location.origin}/auth/login`
 			}
 		});
 

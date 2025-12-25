@@ -6,6 +6,65 @@ Chronological notes on development progress, sessions, and learnings.
 
 ## 2025-12-25
 
+### Session: Home Page & Auth Redirect Fix
+
+**What was done:**
+- Implemented full home page with dynamic content:
+  - Today's Workout card showing current day from active training block
+  - "Start Workout" button linking to workout tracking
+  - Week/day progress indicators
+  - Quick Actions grid (View Block, Exercises)
+  - Recent Activity section showing last 5 completed workouts
+  - No Active Block state with create button
+  - Loading skeleton state
+- Fixed email verification redirect issue:
+  - Added `emailRedirectTo` option in signUp function
+  - Uses `window.location.origin` for environment-aware redirects
+  - Configured Supabase dashboard with production + localhost URLs
+
+**Technical decisions:**
+- Home page fetches active block with `status: 'active'` filter
+- Recent sessions query uses Supabase relation syntax for workout_day and training_block names
+- Relative date formatting (Today, Yesterday, X days ago)
+
+**Files modified:**
+- `src/routes/+page.svelte` - Full home page implementation
+- `src/lib/stores/auth.svelte.ts` - Added emailRedirectTo for signUp
+
+---
+
+### Session: Workout Tracking Implementation
+
+**What was done:**
+- Implemented workout tracking when user clicks a training block:
+  - Loads current workout day with exercises
+  - Creates or resumes workout session
+  - Displays exercises with expandable set rows
+  - Set input modal for logging weight/reps/RIR
+  - Saves sets to database in real-time
+  - Complete workout button advances day/week
+- Fixed database column name mismatch (`session_id` not `workout_session_id`)
+
+**Technical decisions:**
+- Workout state managed in `workoutStore.svelte.ts`
+- Sets calculated per week using `calculateSetsForWeek()` from wizard types
+- Previous session weights used as targets for current session
+- Session auto-creates on page load if not exists
+
+**Files created:**
+- `src/routes/blocks/[id]/+page.svelte` - Workout tracking page
+- `src/lib/stores/workoutStore.svelte.ts` - Workout session state
+- `src/lib/types/workout.ts` - Workout-specific types
+- `src/lib/components/workout/WorkoutHeader.svelte`
+- `src/lib/components/workout/ExerciseCard.svelte`
+- `src/lib/components/workout/SetRow.svelte`
+- `src/lib/components/workout/SetInputModal.svelte`
+
+**Issues encountered:**
+- Supabase schema had `session_id` not `workout_session_id` - updated types and store
+
+---
+
 ### Session: Training Block Wizard & Bug Fixes
 
 **What was done:**
