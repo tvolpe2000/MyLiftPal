@@ -6,6 +6,40 @@ Chronological notes on development progress, sessions, and learnings.
 
 ## 2025-12-25
 
+### Session: Volume Tracking Feature
+
+**What was done:**
+- Implemented volume tracking to show weekly sets per muscle group:
+  - Color-coded status (Red=Low, Green=Good, Yellow=High) for intuitive understanding
+  - Shows set counts per muscle group
+  - Uses research-based volume landmarks (MV, MEV, MAV, MRV) from database
+  - Calculates direct sets (primary muscle) + indirect sets (secondary × weight)
+- Added volume display to training blocks list:
+  - Shows top 5 muscles with set counts as colored pills
+  - Summary badges showing count of "good" and "low" volume muscles
+  - Fetches exercise slots with nested exercise data for calculation
+- Added volume display to workout tracking header:
+  - Collapsible "Today's Volume" section
+  - Compact pills when collapsed, full grid when expanded
+  - Color legend (Low/Good/High) for quick reference
+
+**Technical decisions:**
+- Volume calculation utility in `src/lib/utils/volume.ts`
+- VolumeBar and VolumeSummary components for reusable display
+- Volume calculated based on current week's set count (accounts for progression)
+- Designed for all fitness levels - uses simple "Low/Good/High" labels instead of jargon
+
+**Files created:**
+- `src/lib/utils/volume.ts` - Volume calculation and status utilities
+- `src/lib/components/volume/VolumeBar.svelte` - Individual muscle volume bar
+- `src/lib/components/volume/VolumeSummary.svelte` - Grid of volume bars
+
+**Files modified:**
+- `src/lib/components/workout/WorkoutHeader.svelte` - Added collapsible volume summary
+- `src/routes/blocks/+page.svelte` - Added volume display per training block
+
+---
+
 ### Session: Home Page & Auth Redirect Fix
 
 **What was done:**

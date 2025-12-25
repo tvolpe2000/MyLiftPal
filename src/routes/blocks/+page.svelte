@@ -3,8 +3,26 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { supabase } from '$lib/db/supabase';
 	import AppShell from '$lib/components/AppShell.svelte';
-	import { Plus, Calendar, Dumbbell, ChevronRight, Play, Pause, CheckCircle } from 'lucide-svelte';
-	import type { TrainingBlockStatus } from '$lib/types/database';
+	import { Plus, Calendar, Dumbbell, ChevronRight, Play, Pause, CheckCircle, BarChart3 } from 'lucide-svelte';
+	import { calculateWeeklyVolume, getVolumeBarColor } from '$lib/utils/volume';
+	import type { MuscleVolume, MuscleGroupData, ExerciseForVolume } from '$lib/utils/volume';
+	import type { TrainingBlockStatus, SecondaryMuscle } from '$lib/types/database';
+	import { calculateSetsForWeek } from '$lib/types/wizard';
+
+	interface ExerciseSlotData {
+		base_sets: number;
+		set_progression: number;
+		exercise: {
+			primary_muscle: string;
+			secondary_muscles: SecondaryMuscle[];
+		};
+	}
+
+	interface WorkoutDayData {
+		id: string;
+		name: string;
+		exercise_slots: ExerciseSlotData[];
+	}
 
 	interface TrainingBlock {
 		id: string;
@@ -14,10 +32,11 @@
 		current_day: number;
 		status: TrainingBlockStatus;
 		started_at: string;
-		workout_days: { id: string; name: string }[];
+		workout_days: WorkoutDayData[];
 	}
 
 	let blocks = $state<TrainingBlock[]>([]);
+	let muscleGroups = $state<MuscleGroupData[]>([]);
 	let loading = $state(true);
 	let error = $state('');
 
@@ -30,8 +49,20 @@
 	$effect(() => {
 		if (auth.isAuthenticated) {
 			loadBlocks();
+			loadMuscleGroups();
 		}
 	});
+
+	async function loadMuscleGroups() {
+		const { data } = await supabase
+			.from('muscle_groups')
+			.select('id, display_name, default_mv, default_mev, default_mav, default_mrv, color')
+			.order('sort_order');
+
+		if (data) {
+			muscleGroups = data as MuscleGroupData[];
+		}
+	}
 
 	async function loadBlocks() {
 		if (!auth.user) return;
@@ -49,7 +80,18 @@
 				current_day,
 				status,
 				started_at,
-				workout_days (id, name)
+				workout_days (
+					id,
+					name,
+					exercise_slots (
+						base_sets,
+						set_progression,
+						exercise:exercises (
+							primary_muscle,
+							secondary_muscles
+						)
+					)
+				)
 			`)
 			.eq('user_id', auth.user.id)
 			.order('created_at', { ascending: false });
@@ -58,10 +100,34 @@
 			console.error('Error loading blocks:', fetchError);
 			error = 'Failed to load training blocks';
 		} else {
-			blocks = (data as TrainingBlock[]) || [];
+			blocks = (data as unknown as TrainingBlock[]) || [];
 		}
 
 		loading = false;
+	}
+
+	// Calculate volume for a block
+	function getBlockVolume(block: TrainingBlock): MuscleVolume[] {
+		if (!block.workout_days || muscleGroups.length === 0) return [];
+
+		const exercises: ExerciseForVolume[] = [];
+
+		for (const day of block.workout_days) {
+			for (const slot of day.exercise_slots || []) {
+				const setsPerWeek = calculateSetsForWeek(
+					slot.base_sets,
+					slot.set_progression,
+					block.current_week
+				);
+				exercises.push({
+					primaryMuscle: slot.exercise?.primary_muscle || '',
+					secondaryMuscles: slot.exercise?.secondary_muscles || [],
+					setsPerWeek
+				});
+			}
+		}
+
+		return calculateWeeklyVolume(exercises, muscleGroups);
 	}
 
 	function getStatusIcon(status: TrainingBlockStatus) {
@@ -141,6 +207,10 @@
 					<div class="space-y-4">
 						{#each blocks as block (block.id)}
 							{@const StatusIcon = getStatusIcon(block.status)}
+							{@const volumes = getBlockVolume(block)}
+							{@const topVolumes = volumes.slice(0, 5)}
+							{@const lowCount = volumes.filter((v: MuscleVolume) => v.status === 'low').length}
+							{@const goodCount = volumes.filter((v: MuscleVolume) => v.status === 'good').length}
 							<a
 								href="/blocks/{block.id}"
 								class="block bg-[var(--color-bg-secondary)] rounded-xl p-5 hover:bg-[var(--color-bg-tertiary)] transition-colors"
@@ -184,9 +254,42 @@
 												</div>
 											</div>
 										{/if}
+
+										<!-- Volume Summary -->
+										{#if topVolumes.length > 0}
+											<div class="mt-3 pt-3 border-t border-[var(--color-border)]">
+												<div class="flex items-center gap-2 mb-2">
+													<BarChart3 size={14} class="text-[var(--color-text-muted)]" />
+													<span class="text-xs text-[var(--color-text-muted)]">Weekly Volume</span>
+													{#if goodCount > 0}
+														<span class="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">
+															{goodCount} good
+														</span>
+													{/if}
+													{#if lowCount > 0}
+														<span class="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">
+															{lowCount} low
+														</span>
+													{/if}
+												</div>
+												<div class="flex flex-wrap gap-1.5">
+													{#each topVolumes as vol (vol.muscleId)}
+														{@const barColor = getVolumeBarColor(vol.status)}
+														<span class="text-[10px] px-2 py-1 rounded {barColor} bg-opacity-20 whitespace-nowrap">
+															{vol.muscleName}: {vol.totalSets}
+														</span>
+													{/each}
+													{#if volumes.length > 5}
+														<span class="text-[10px] text-[var(--color-text-muted)] px-2 py-1">
+															+{volumes.length - 5} more
+														</span>
+													{/if}
+												</div>
+											</div>
+										{/if}
 									</div>
 
-									<ChevronRight size={20} class="text-[var(--color-text-muted)] ml-4" />
+									<ChevronRight size={20} class="text-[var(--color-text-muted)] ml-4 flex-shrink-0" />
 								</div>
 							</a>
 						{/each}
