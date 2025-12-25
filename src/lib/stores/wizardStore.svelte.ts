@@ -5,6 +5,8 @@ import type {
 	ExerciseSlotDraft
 } from '$lib/types/wizard';
 import { createDefaultWorkoutDay } from '$lib/types/wizard';
+import type { WorkoutTemplate, TemplateExercise } from '$lib/data/templates';
+import type { Exercise } from '$lib/types';
 
 function createWizardStore() {
 	let state = $state<WizardState>({
@@ -194,6 +196,67 @@ function createWizardStore() {
 		return state.exerciseSlots[dayId] || [];
 	}
 
+	// Apply a template to the wizard
+	function applyTemplate(
+		template: WorkoutTemplate,
+		includeExercises: boolean,
+		exerciseDb: Exercise[]
+	) {
+		// Update basic info - set block name to template name as starting point
+		state.blockName = template.name;
+		state.daysPerWeek = template.daysPerWeek;
+
+		// Create workout days from template
+		const newDays: WorkoutDayDraft[] = [];
+		const newSlots: Record<string, ExerciseSlotDraft[]> = {};
+
+		for (let i = 0; i < template.days.length; i++) {
+			const templateDay = template.days[i];
+			const dayId = crypto.randomUUID();
+
+			newDays.push({
+				id: dayId,
+				dayNumber: i + 1,
+				name: templateDay.name,
+				targetMuscles: templateDay.targetMuscles,
+				timeBudgetMinutes: null
+			});
+
+			// Add exercises if requested
+			if (includeExercises && templateDay.exercises) {
+				newSlots[dayId] = [];
+				let slotOrder = 0;
+
+				for (const templateEx of templateDay.exercises) {
+					// Find the exercise in the database by name
+					const exercise = exerciseDb.find(
+						(ex) => ex.name.toLowerCase() === templateEx.exerciseName.toLowerCase()
+					);
+
+					if (exercise) {
+						newSlots[dayId].push({
+							id: crypto.randomUUID(),
+							exerciseId: exercise.id,
+							exercise: exercise,
+							slotOrder: slotOrder++,
+							baseSets: templateEx.baseSets,
+							setProgression: templateEx.setProgression,
+							repRangeMin: templateEx.repRangeMin,
+							repRangeMax: templateEx.repRangeMax,
+							restSeconds: null,
+							supersetGroup: null,
+							notes: ''
+						});
+					}
+				}
+			}
+		}
+
+		state.workoutDays = newDays;
+		state.exerciseSlots = newSlots;
+		state.isDirty = true;
+	}
+
 	return {
 		// State getters
 		get currentStep() {
@@ -250,7 +313,8 @@ function createWizardStore() {
 		updateExerciseSlot,
 		removeExerciseSlot,
 		reorderExerciseSlots,
-		getExercisesForDay
+		getExercisesForDay,
+		applyTemplate
 	};
 }
 

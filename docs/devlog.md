@@ -6,6 +6,48 @@ Chronological notes on development progress, sessions, and learnings.
 
 ## 2025-12-25
 
+### Session: Wizard Enhancements - Volume, Templates & Auto-Fill
+
+**What was done:**
+- Added real-time volume display to wizard Step 3 (Add Exercises):
+  - Collapsible weekly volume summary showing sets per muscle group
+  - Color-coded status (Low/Good/High) with progress bars
+  - Summary badges showing counts of good/low/high volume muscles
+  - Updates dynamically as exercises are added/removed
+- Implemented program templates system:
+  - 6 pre-built templates: PPL (3-day), PPL x2 (6-day), Upper/Lower, Full Body, Bro Split, Hybrid
+  - Templates include days, target muscles, and optional exercises
+  - "Use a Template" button in Step 1 with modal picker
+  - Toggle to include/exclude pre-filled exercises
+- Added smart auto-fill feature:
+  - Wand icon per day showing AI-style suggestions
+  - Suggestions based on target muscles and volume gaps
+  - Prioritizes undertrained muscles and compound exercises
+  - "Add All" button to quick-fill with 5 exercises
+  - Click individual suggestions to add one at a time
+
+**Technical decisions:**
+- Templates stored in-memory (`src/lib/data/templates.ts`) - no database changes needed
+- Template exercises matched by name to database entries
+- Smart suggestions use equipment priority (barbell > dumbbell > cable > machine)
+- Volume calculations reuse existing `calculateWeeklyVolume()` utility
+
+**Files created:**
+- `src/lib/data/templates.ts` - 6 pre-built workout templates
+- `src/lib/components/wizard/TemplatePicker.svelte` - Template selection modal
+
+**Files modified:**
+- `src/lib/components/wizard/StepAddExercises.svelte` - Volume display + auto-fill
+- `src/lib/components/wizard/StepBasicInfo.svelte` - Template picker integration
+- `src/lib/stores/wizardStore.svelte.ts` - Added applyTemplate() method
+
+**Bug fix:**
+- Template selection now auto-fills block name with template name
+- Added green success message when template is applied
+- Clear UX showing user needs to continue through wizard steps
+
+---
+
 ### Session: Volume Tracking Feature
 
 **What was done:**
