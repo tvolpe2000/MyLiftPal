@@ -258,7 +258,7 @@ function createWorkoutStore() {
 
 		try {
 			const setData = {
-				workout_session_id: state.session.id,
+				session_id: state.session.id,
 				exercise_slot_id: exercise.slot.id,
 				exercise_id: exercise.slot.exercise.id,
 				set_number: set.setNumber,

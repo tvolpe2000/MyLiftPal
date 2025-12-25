@@ -290,7 +290,7 @@ export interface Database {
 			logged_sets: {
 				Row: {
 					id: string;
-					workout_session_id: string;
+					session_id: string;
 					exercise_slot_id: string;
 					exercise_id: string;
 					set_number: number;
@@ -301,13 +301,13 @@ export interface Database {
 					weight_unit: 'lbs' | 'kg';
 					rir: number | null;
 					completed: boolean;
+					pump_rating: string | null;
 					logged_at: string | null;
 					notes: string | null;
-					created_at: string;
 				};
 				Insert: {
 					id?: string;
-					workout_session_id: string;
+					session_id: string;
 					exercise_slot_id: string;
 					exercise_id: string;
 					set_number: number;
@@ -318,13 +318,13 @@ export interface Database {
 					weight_unit?: 'lbs' | 'kg';
 					rir?: number | null;
 					completed?: boolean;
+					pump_rating?: string | null;
 					logged_at?: string | null;
 					notes?: string | null;
-					created_at?: string;
 				};
 				Update: {
 					id?: string;
-					workout_session_id?: string;
+					session_id?: string;
 					exercise_slot_id?: string;
 					exercise_id?: string;
 					set_number?: number;
@@ -335,9 +335,9 @@ export interface Database {
 					weight_unit?: 'lbs' | 'kg';
 					rir?: number | null;
 					completed?: boolean;
+					pump_rating?: string | null;
 					logged_at?: string | null;
 					notes?: string | null;
-					created_at?: string;
 				};
 			};
 			user_volume_targets: {
