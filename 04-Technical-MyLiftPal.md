@@ -327,10 +327,10 @@ CREATE TABLE public.muscle_groups (
   display_name TEXT NOT NULL,
   category TEXT NOT NULL CHECK (category IN ('upper', 'lower', 'core')),
   color TEXT NOT NULL,
-  mv INTEGER NOT NULL DEFAULT 6,    -- Maintenance Volume
-  mev INTEGER NOT NULL DEFAULT 10,  -- Minimum Effective Volume
-  mav INTEGER NOT NULL DEFAULT 16,  -- Maximum Adaptive Volume
-  mrv INTEGER NOT NULL DEFAULT 22   -- Maximum Recoverable Volume
+  mv INTEGER NOT NULL DEFAULT 6,
+  mev INTEGER NOT NULL DEFAULT 10,
+  mav INTEGER NOT NULL DEFAULT 16,
+  mrv INTEGER NOT NULL DEFAULT 22
 );
 
 -- ============================================
@@ -342,7 +342,7 @@ CREATE TABLE public.exercises (
   aliases TEXT[] DEFAULT '{}',
   equipment TEXT NOT NULL CHECK (equipment IN ('barbell', 'dumbbell', 'cable', 'machine', 'bodyweight', 'other')),
   primary_muscle TEXT NOT NULL REFERENCES public.muscle_groups(id),
-  secondary_muscles JSONB DEFAULT '[]',  -- [{muscle: "triceps", weight: 0.5}]
+  secondary_muscles JSONB DEFAULT '[]',
   video_url TEXT,
   default_rep_min INTEGER DEFAULT 8,
   default_rep_max INTEGER DEFAULT 12,
@@ -353,16 +353,13 @@ CREATE TABLE public.exercises (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index for search
-CREATE INDEX idx_exercises_search ON public.exercises 
-  USING GIN (to_tsvector('english', name || ' ' || array_to_string(aliases, ' ')));
-
--- Index for filtering
+-- Simple indexes (removed full-text search index)
 CREATE INDEX idx_exercises_equipment ON public.exercises(equipment);
 CREATE INDEX idx_exercises_primary_muscle ON public.exercises(primary_muscle);
+CREATE INDEX idx_exercises_name ON public.exercises(name);
 
 -- ============================================
--- MESOCYCLES
+-- TRAINING BLOCKS
 -- ============================================
 CREATE TABLE public.training_blocks (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -408,11 +405,11 @@ CREATE TABLE public.exercise_slots (
   exercise_id UUID NOT NULL REFERENCES public.exercises(id),
   slot_order INTEGER NOT NULL,
   base_sets INTEGER NOT NULL DEFAULT 3,
-  set_progression NUMERIC(3,1) DEFAULT 0.5,  -- Sets added per week
+  set_progression NUMERIC(3,1) DEFAULT 0.5,
   rep_range_min INTEGER NOT NULL DEFAULT 8,
   rep_range_max INTEGER NOT NULL DEFAULT 12,
-  rest_seconds INTEGER,  -- NULL = use exercise default
-  superset_group TEXT,   -- Exercises with same group are supersetted
+  rest_seconds INTEGER,
+  superset_group TEXT,
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   
@@ -462,7 +459,7 @@ CREATE TABLE public.logged_sets (
   target_reps INTEGER,
   actual_reps INTEGER,
   weight_unit TEXT DEFAULT 'lbs' CHECK (weight_unit IN ('lbs', 'kg')),
-  rir INTEGER CHECK (rir BETWEEN 0 AND 5),  -- Reps in Reserve
+  rir INTEGER CHECK (rir BETWEEN 0 AND 5),
   completed BOOLEAN DEFAULT false,
   pump_rating TEXT CHECK (pump_rating IN ('none', 'mild', 'moderate', 'great', 'excessive')),
   notes TEXT,
@@ -475,7 +472,7 @@ CREATE INDEX idx_logged_sets_session ON public.logged_sets(session_id);
 CREATE INDEX idx_logged_sets_exercise ON public.logged_sets(exercise_id);
 
 -- ============================================
--- USER VOLUME TARGETS (overrides defaults)
+-- USER VOLUME TARGETS
 -- ============================================
 CREATE TABLE public.user_volume_targets (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -491,7 +488,7 @@ CREATE TABLE public.user_volume_targets (
 );
 
 -- ============================================
--- SYNC QUEUE (for offline support)
+-- SYNC QUEUE
 -- ============================================
 CREATE TABLE public.sync_queue (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -506,107 +503,6 @@ CREATE TABLE public.sync_queue (
 );
 
 CREATE INDEX idx_sync_queue_user ON public.sync_queue(user_id, synced_at);
-
--- ============================================
--- ROW LEVEL SECURITY
--- ============================================
-
--- Enable RLS on all tables
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.exercises ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.training_blocks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.workout_days ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.exercise_slots ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.workout_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.logged_sets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_volume_targets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sync_queue ENABLE ROW LEVEL SECURITY;
-
--- Profiles: users can only access their own
-CREATE POLICY "Users can view own profile"
-  ON public.profiles FOR SELECT
-  USING (auth.uid() = id);
-
-CREATE POLICY "Users can update own profile"
-  ON public.profiles FOR UPDATE
-  USING (auth.uid() = id);
-
--- Exercises: users can see core + their own custom
-CREATE POLICY "Users can view exercises"
-  ON public.exercises FOR SELECT
-  USING (is_core = true OR created_by = auth.uid());
-
-CREATE POLICY "Users can create exercises"
-  ON public.exercises FOR INSERT
-  WITH CHECK (auth.uid() = created_by AND is_core = false);
-
-CREATE POLICY "Users can update own exercises"
-  ON public.exercises FOR UPDATE
-  USING (created_by = auth.uid() AND is_core = false);
-
-CREATE POLICY "Users can delete own exercises"
-  ON public.exercises FOR DELETE
-  USING (created_by = auth.uid() AND is_core = false);
-
--- Training Blocks: users can only access their own
-CREATE POLICY "Users can CRUD own training blocks"
-  ON public.training_blocks FOR ALL
-  USING (auth.uid() = user_id);
-
--- Workout Days: access through training block ownership
-CREATE POLICY "Users can access workout days"
-  ON public.workout_days FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.training_blocks
-      WHERE id = workout_days.training_block_id
-      AND user_id = auth.uid()
-    )
-  );
-
--- Exercise Slots: access through workout day ownership
-CREATE POLICY "Users can access exercise slots"
-  ON public.exercise_slots FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.workout_days wd
-      JOIN public.training_blocks m ON m.id = wd.training_block_id
-      WHERE wd.id = exercise_slots.workout_day_id
-      AND m.user_id = auth.uid()
-    )
-  );
-
--- Workout Sessions: users can only access their own
-CREATE POLICY "Users can CRUD own sessions"
-  ON public.workout_sessions FOR ALL
-  USING (auth.uid() = user_id);
-
--- Logged Sets: access through session ownership
-CREATE POLICY "Users can access logged sets"
-  ON public.logged_sets FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.workout_sessions
-      WHERE id = logged_sets.session_id
-      AND user_id = auth.uid()
-    )
-  );
-
--- User Volume Targets: users can only access their own
-CREATE POLICY "Users can CRUD own volume targets"
-  ON public.user_volume_targets FOR ALL
-  USING (auth.uid() = user_id);
-
--- Sync Queue: users can only access their own
-CREATE POLICY "Users can CRUD own sync queue"
-  ON public.sync_queue FOR ALL
-  USING (auth.uid() = user_id);
-
--- Muscle Groups: readable by all authenticated users
-CREATE POLICY "Authenticated users can view muscle groups"
-  ON public.muscle_groups FOR SELECT
-  TO authenticated
-  USING (true);
 ```
 
 ### 3.3 Seed Data
