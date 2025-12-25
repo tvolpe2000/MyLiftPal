@@ -1,1 +1,14 @@
 @import 'tailwindcss';
+
+:root {
+	--color-accent: #10b981;
+	--color-accent-hover: #34d399;
+	--color-accent-muted: rgba(16, 185, 129, 0.2);
+	--color-bg-primary: #0a120f;
+	--color-bg-secondary: #0f1a16;
+	--color-bg-tertiary: #162420;
+	--color-border: #1f2f29;
+	--color-text-primary: #ffffff;
+	--color-text-secondary: #a1a1aa;
+	--color-text-muted: #71717a;
+}

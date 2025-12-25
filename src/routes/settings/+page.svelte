@@ -1,0 +1,189 @@
+<script lang="ts">
+	import { goto } from '$app/navigation';
+	import { auth } from '$lib/stores/auth.svelte';
+	import AppShell from '$lib/components/AppShell.svelte';
+	import { supabase } from '$lib/db/supabase';
+	import { User, Scale, Palette, LogOut } from 'lucide-svelte';
+	import ThemeSelector from '$lib/components/ThemeSelector.svelte';
+
+	let displayName = $state(auth.profile?.display_name || '');
+	let weightUnit = $state<'lbs' | 'kg'>(auth.profile?.weight_unit || 'lbs');
+	let defaultRestSeconds = $state(auth.profile?.default_rest_seconds || 90);
+	let saving = $state(false);
+	let saved = $state(false);
+
+	$effect(() => {
+		if (auth.initialized && !auth.isAuthenticated) {
+			goto('/auth/login');
+		}
+	});
+
+	$effect(() => {
+		if (auth.profile) {
+			displayName = auth.profile.display_name || '';
+			weightUnit = auth.profile.weight_unit;
+			defaultRestSeconds = auth.profile.default_rest_seconds;
+		}
+	});
+
+	async function saveProfile() {
+		if (!auth.user) return;
+
+		saving = true;
+		saved = false;
+
+		const { error } = await supabase
+			.from('profiles')
+			.update({
+				display_name: displayName,
+				weight_unit: weightUnit,
+				default_rest_seconds: defaultRestSeconds,
+				updated_at: new Date().toISOString()
+			} as never)
+			.eq('id', auth.user.id);
+
+		if (error) {
+			console.error('Error saving profile:', error);
+		} else {
+			await auth.fetchProfile(auth.user.id);
+			saved = true;
+			setTimeout(() => saved = false, 2000);
+		}
+
+		saving = false;
+	}
+
+	async function handleSignOut() {
+		await auth.signOut();
+		goto('/auth/login');
+	}
+</script>
+
+{#if auth.isAuthenticated}
+	<AppShell>
+		<div class="p-6">
+			<div class="max-w-2xl mx-auto">
+				<div class="mb-8">
+					<h1 class="text-2xl font-bold text-[var(--color-text-primary)]">Settings</h1>
+					<p class="text-[var(--color-text-secondary)]">Manage your profile and preferences</p>
+				</div>
+
+				<div class="space-y-6">
+					<!-- Profile Section -->
+					<div class="bg-[var(--color-bg-secondary)] rounded-xl p-6">
+						<div class="flex items-center gap-3 mb-6">
+							<User size={20} class="text-[var(--color-accent)]" />
+							<h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Profile</h2>
+						</div>
+
+						<div class="space-y-4">
+							<div>
+								<label for="displayName" class="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+									Display Name
+								</label>
+								<input
+									type="text"
+									id="displayName"
+									bind:value={displayName}
+									class="w-full bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] rounded-lg px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] transition-colors"
+								/>
+							</div>
+
+							<div>
+								<span class="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+									Email
+								</span>
+								<div class="px-4 py-3 bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] rounded-lg text-[var(--color-text-muted)]">
+									{auth.user?.email}
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Preferences Section -->
+					<div class="bg-[var(--color-bg-secondary)] rounded-xl p-6">
+						<div class="flex items-center gap-3 mb-6">
+							<Scale size={20} class="text-[var(--color-accent)]" />
+							<h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Preferences</h2>
+						</div>
+
+						<div class="space-y-4">
+							<div role="group" aria-labelledby="weight-unit-label">
+								<span id="weight-unit-label" class="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+									Weight Unit
+								</span>
+								<div class="flex gap-3">
+									<button
+										onclick={() => weightUnit = 'lbs'}
+										class="flex-1 py-3 rounded-lg font-medium transition-colors {weightUnit === 'lbs' ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]' : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'}"
+									>
+										Pounds (lbs)
+									</button>
+									<button
+										onclick={() => weightUnit = 'kg'}
+										class="flex-1 py-3 rounded-lg font-medium transition-colors {weightUnit === 'kg' ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]' : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'}"
+									>
+										Kilograms (kg)
+									</button>
+								</div>
+							</div>
+
+							<div>
+								<label for="restTime" class="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+									Default Rest Time (seconds)
+								</label>
+								<div class="flex items-center gap-4">
+									<input
+										type="range"
+										id="restTime"
+										bind:value={defaultRestSeconds}
+										min="30"
+										max="300"
+										step="15"
+										class="flex-1 accent-[var(--color-accent)]"
+									/>
+									<span class="text-[var(--color-text-primary)] font-mono w-16 text-right">{defaultRestSeconds}s</span>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Theme Section -->
+					<div class="bg-[var(--color-bg-secondary)] rounded-xl p-6">
+						<div class="flex items-center gap-3 mb-6">
+							<Palette size={20} class="text-[var(--color-accent)]" />
+							<h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Theme</h2>
+						</div>
+						<ThemeSelector />
+					</div>
+
+					<!-- Save Button -->
+					<button
+						onclick={saveProfile}
+						disabled={saving}
+						class="w-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] disabled:opacity-50 text-[var(--color-bg-primary)] font-semibold py-3 rounded-lg transition-colors"
+					>
+						{#if saving}
+							Saving...
+						{:else if saved}
+							Saved
+						{:else}
+							Save Changes
+						{/if}
+					</button>
+
+					<!-- Sign Out -->
+					<div class="pt-6 border-t border-[var(--color-border)]">
+						<button
+							onclick={handleSignOut}
+							class="flex items-center justify-center gap-2 w-full py-3 text-[var(--color-text-secondary)] hover:text-red-400 transition-colors"
+						>
+							<LogOut size={20} />
+							<span>Sign Out</span>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</AppShell>
+{/if}
