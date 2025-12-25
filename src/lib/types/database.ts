@@ -38,33 +38,30 @@ export interface Database {
 					display_name: string;
 					category: 'upper' | 'lower' | 'core';
 					color: string;
-					default_mv: number;
-					default_mev: number;
-					default_mav: number;
-					default_mrv: number;
-					sort_order: number;
+					mv: number;
+					mev: number;
+					mav: number;
+					mrv: number;
 				};
 				Insert: {
 					id: string;
 					display_name: string;
 					category: 'upper' | 'lower' | 'core';
 					color: string;
-					default_mv?: number;
-					default_mev?: number;
-					default_mav?: number;
-					default_mrv?: number;
-					sort_order?: number;
+					mv?: number;
+					mev?: number;
+					mav?: number;
+					mrv?: number;
 				};
 				Update: {
 					id?: string;
 					display_name?: string;
 					category?: 'upper' | 'lower' | 'core';
 					color?: string;
-					default_mv?: number;
-					default_mev?: number;
-					default_mav?: number;
-					default_mrv?: number;
-					sort_order?: number;
+					mv?: number;
+					mev?: number;
+					mav?: number;
+					mrv?: number;
 				};
 			};
 			exercises: {

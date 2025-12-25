@@ -16,8 +16,7 @@
 	async function loadMuscleGroups() {
 		const { data } = await supabase
 			.from('muscle_groups')
-			.select('id, display_name, default_mv, default_mev, default_mav, default_mrv, color')
-			.order('sort_order');
+			.select('id, display_name, mv, mev, mav, mrv, color');
 
 		if (data) {
 			muscleGroups = data as MuscleGroupData[];

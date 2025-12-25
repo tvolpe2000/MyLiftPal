@@ -30,10 +30,10 @@ export interface ExerciseForVolume {
 export interface MuscleGroupData {
 	id: string;
 	display_name: string;
-	default_mv: number;
-	default_mev: number;
-	default_mav: number;
-	default_mrv: number;
+	mv: number;
+	mev: number;
+	mav: number;
+	mrv: number;
 	color: string;
 }
 
@@ -102,23 +102,23 @@ export function calculateWeeklyVolume(
 		const totalSets = Math.round(volume.direct + volume.indirect);
 		const { status, label, color } = getVolumeStatus(
 			totalSets,
-			mg.default_mev,
-			mg.default_mav,
-			mg.default_mrv
+			mg.mev,
+			mg.mav,
+			mg.mrv
 		);
 
 		// Only include muscles that have volume or are commonly tracked
-		if (totalSets > 0 || mg.default_mev > 0) {
+		if (totalSets > 0 || mg.mev > 0) {
 			results.push({
 				muscleId: mg.id,
 				muscleName: mg.display_name,
 				directSets: volume.direct,
 				indirectSets: Math.round(volume.indirect * 10) / 10,
 				totalSets,
-				mv: mg.default_mv,
-				mev: mg.default_mev,
-				mav: mg.default_mav,
-				mrv: mg.default_mrv,
+				mv: mg.mv,
+				mev: mg.mev,
+				mav: mg.mav,
+				mrv: mg.mrv,
 				status,
 				statusLabel: label,
 				color
