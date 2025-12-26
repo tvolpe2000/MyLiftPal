@@ -4,7 +4,9 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
 	import { workoutSettings } from '$lib/stores/workoutSettings.svelte';
+	import { offline } from '$lib/stores/offlineStore.svelte';
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 
 	let { children } = $props();
 
@@ -12,6 +14,28 @@
 		auth.initialize();
 		theme.initialize();
 		workoutSettings.initialize();
+		offline.init();
+
+		// Set up online/offline listeners
+		if (browser) {
+			const handleOnline = () => {
+				offline.refreshOnlineStatus();
+				// Auto-sync when coming back online
+				offline.syncPendingSets();
+			};
+
+			const handleOffline = () => {
+				offline.refreshOnlineStatus();
+			};
+
+			window.addEventListener('online', handleOnline);
+			window.addEventListener('offline', handleOffline);
+
+			return () => {
+				window.removeEventListener('online', handleOnline);
+				window.removeEventListener('offline', handleOffline);
+			};
+		}
 	});
 </script>
 

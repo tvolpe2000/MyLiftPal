@@ -7,6 +7,7 @@
 	import WorkoutHeader from '$lib/components/workout/WorkoutHeader.svelte';
 	import ExerciseCard from '$lib/components/workout/ExerciseCard.svelte';
 	import SetInputModal from '$lib/components/workout/SetInputModal.svelte';
+	import SyncStatus from '$lib/components/offline/SyncStatus.svelte';
 	import { CheckCircle } from 'lucide-svelte';
 
 	const blockId = $derived($page.params.id);
@@ -50,6 +51,11 @@
 		{:else}
 			<!-- Header -->
 			<WorkoutHeader />
+
+			<!-- Sync Status -->
+			<div class="px-4 py-2">
+				<SyncStatus />
+			</div>
 
 			<!-- Exercise List -->
 			<div class="p-4 pb-32 space-y-4">

@@ -3,6 +3,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { supabase } from '$lib/db/supabase';
 	import AppShell from '$lib/components/AppShell.svelte';
+	import DownloadButton from '$lib/components/offline/DownloadButton.svelte';
 	import { Play, Plus, Dumbbell, Clock, TrendingUp, Calendar } from 'lucide-svelte';
 	import type { TrainingBlockStatus } from '$lib/types/index';
 
@@ -86,9 +87,12 @@
 		}
 	}
 
-	const currentDayName = $derived(
-		activeBlock?.workout_days?.find((d) => d.day_number === activeBlock?.current_day)?.name || 'Workout'
+	const currentDay = $derived(
+		activeBlock?.workout_days?.find((d) => d.day_number === activeBlock?.current_day)
 	);
+
+	const currentDayName = $derived(currentDay?.name || 'Workout');
+	const currentDayId = $derived(currentDay?.id || '');
 
 	function formatDate(dateStr: string): string {
 		const date = new Date(dateStr);
@@ -141,6 +145,17 @@
 								Day {activeBlock.current_day}
 							</div>
 						</div>
+
+						<!-- Download for offline -->
+						{#if currentDayId}
+							<div class="mb-4">
+								<DownloadButton
+									dayId={currentDayId}
+									blockId={activeBlock.id}
+									dayName={currentDayName}
+								/>
+							</div>
+						{/if}
 
 						<a
 							href="/blocks/{activeBlock.id}"

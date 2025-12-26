@@ -37,13 +37,13 @@ Quick reference for what's done vs what's remaining.
 
 ---
 
-## Phase 3: Time & Offline
+## Phase 3: Time & Offline ✅ COMPLETE
 
 - [x] Time estimation (show projected workout duration per week)
 - [x] Time budget warnings (alert if final week exceeds budget)
-- [ ] "Download Today" offline mode
-- [ ] Sync queue for offline changes
-- [ ] PWA installation prompt
+- [x] "Download Today" offline mode
+- [x] Sync queue for offline changes
+- [x] PWA infrastructure (service worker, manifest, IndexedDB)
 
 ---
 
@@ -83,6 +83,7 @@ Quick reference for what's done vs what's remaining.
 
 | Date | Feature |
 |------|---------|
+| 2025-12-26 | PWA offline mode (Download Today, sync queue, offline indicator) |
 | 2025-12-26 | Time estimation (wizard Step 3 + blocks list) |
 | 2025-12-26 | ExerciseCard muscle display (primary/secondary muscles) |
 | 2025-12-26 | Scroll wheel picker + global workout settings |
@@ -99,4 +100,4 @@ Quick reference for what's done vs what's remaining.
 
 ---
 
-*Last updated: 2025-12-25*
+*Last updated: 2025-12-26*

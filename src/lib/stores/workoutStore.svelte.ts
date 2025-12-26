@@ -1,6 +1,8 @@
 import { supabase } from '$lib/db/supabase';
 import { auth } from './auth.svelte';
+import { offline } from './offlineStore.svelte';
 import { calculateSetsForWeek } from '$lib/types/wizard';
+import type { PendingSet } from '$lib/db/indexedDB';
 import type {
 	WorkoutState,
 	ExerciseState,
@@ -265,6 +267,32 @@ function createWorkoutStore() {
 		state.isSaving = true;
 
 		try {
+			// If offline, queue the set for later sync
+			if (!offline.isOnline) {
+				const pendingSet: PendingSet = {
+					id: crypto.randomUUID(),
+					sessionId: state.session.id,
+					exerciseSlotId: exercise.slot.id,
+					exerciseId: exercise.slot.exercise.id,
+					setNumber: set.setNumber,
+					weight: data.weight,
+					reps: data.reps,
+					rir: data.rir,
+					createdAt: Date.now()
+				};
+
+				await offline.queueSet(pendingSet);
+
+				// Update local state optimistically
+				set.actualWeight = data.weight;
+				set.actualReps = data.reps;
+				set.rir = data.rir;
+				set.completed = true;
+
+				return true;
+			}
+
+			// Online: save to Supabase
 			const setData = {
 				session_id: state.session.id,
 				exercise_slot_id: exercise.slot.id,
@@ -322,6 +350,33 @@ function createWorkoutStore() {
 		state.isSaving = true;
 
 		try {
+			// If offline, queue the set for later sync
+			if (!offline.isOnline) {
+				const pendingSet: PendingSet = {
+					id: crypto.randomUUID(),
+					sessionId: state.session.id,
+					exerciseSlotId: exercise.slot.id,
+					exerciseId: exercise.slot.exercise.id,
+					setNumber: set.setNumber,
+					weight: data.weight,
+					reps: data.reps,
+					rir: data.rir,
+					createdAt: Date.now()
+				};
+
+				await offline.queueSet(pendingSet);
+
+				// Update local state optimistically
+				set.actualWeight = data.weight;
+				set.actualReps = data.reps;
+				set.rir = data.rir;
+				set.completed = true;
+
+				closeSetInput();
+				return;
+			}
+
+			// Online: save to Supabase
 			const setData = {
 				session_id: state.session.id,
 				exercise_slot_id: exercise.slot.id,

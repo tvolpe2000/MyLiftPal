@@ -6,6 +6,59 @@ Chronological notes on development progress, sessions, and learnings.
 
 ## 2025-12-26
 
+### Session: PWA Offline Mode (Phase 3)
+
+**What was done:**
+- Implemented full PWA infrastructure for offline support:
+  - Service worker with Workbox caching strategies
+  - Web app manifest with icons
+  - IndexedDB for offline data storage
+- Created offline store (`src/lib/stores/offlineStore.svelte.ts`):
+  - Track online/offline status
+  - Manage downloaded workout days
+  - Queue pending sets for sync
+  - Auto-sync when coming back online
+- Created IndexedDB wrapper (`src/lib/db/indexedDB.ts`):
+  - Store workout days with exercises and previous sets
+  - Store pending sets queue
+  - Store offline sessions
+- Created UI components:
+  - `DownloadButton.svelte` - Download workout for offline use
+  - `SyncStatus.svelte` - Show pending sets and sync status
+  - `OfflineIndicator.svelte` - Global offline banner
+- Modified workoutStore to queue sets when offline
+- Added DownloadButton to home page "Today's Workout" card
+- Added SyncStatus to workout tracking page
+- Added OfflineIndicator to AppShell
+
+**Technical decisions:**
+- Used `@vite-pwa/sveltekit` for PWA integration
+- Used `idb` library for IndexedDB wrapper
+- NetworkFirst strategy for Supabase API calls
+- CacheFirst for static assets
+- Optimistic UI updates when offline (sets logged locally, synced later)
+- Auto-sync triggered on 'online' event
+
+**Files created:**
+- `src/lib/db/indexedDB.ts` - IndexedDB wrapper
+- `src/lib/stores/offlineStore.svelte.ts` - Offline state management
+- `static/manifest.webmanifest` - PWA manifest
+- `static/icon-192.svg`, `static/icon-512.svg` - Placeholder icons
+- `src/lib/components/offline/DownloadButton.svelte`
+- `src/lib/components/offline/SyncStatus.svelte`
+- `src/lib/components/offline/OfflineIndicator.svelte`
+
+**Files modified:**
+- `vite.config.ts` - Added SvelteKitPWA plugin
+- `src/app.html` - Added PWA meta tags
+- `src/lib/stores/workoutStore.svelte.ts` - Offline set queueing
+- `src/routes/+page.svelte` - DownloadButton on home page
+- `src/routes/blocks/[id]/+page.svelte` - SyncStatus
+- `src/lib/components/AppShell.svelte` - OfflineIndicator
+- `src/routes/+layout.svelte` - Offline store init + event listeners
+
+---
+
 ### Session: Time Estimation Feature (Phase 3)
 
 **What was done:**
