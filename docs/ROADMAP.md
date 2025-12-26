@@ -54,6 +54,7 @@ Quick reference for what's done vs what's remaining.
 - [ ] Progression reasoning display
 - [ ] Performance optimization
 - [ ] Additional themes
+- [ ] "Fill to Optimal" button on wizard Step 4 (auto-add exercises until all muscles hit green volume)
 
 ---
 
@@ -67,7 +68,6 @@ Quick reference for what's done vs what's remaining.
 
 ## Backlog / Nice-to-Have
 
-- [ ] Auto-fill to optimal volume (wizard Step 3 or Step 4 button to fill exercises until all muscles hit "green" volume)
 - [ ] Duplicate training block
 - [ ] Export data (CSV/JSON)
 - [ ] Exercise video links
