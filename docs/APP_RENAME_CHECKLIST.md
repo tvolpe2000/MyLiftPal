@@ -100,4 +100,86 @@ grep -r "MyLiftPal" --include="*.ts" --include="*.svelte" --include="*.json" --i
 
 ---
 
+---
+
+## New Supabase Project Setup
+
+When creating a fresh Supabase project (recommended for production):
+
+### 1. Create Project
+- [ ] Create new project at supabase.com with new app name
+- [ ] Note the project URL and anon key
+- [ ] Wait for project to fully provision (~2 minutes)
+
+### 2. Run Database Migrations
+Run these SQL scripts in order via Supabase SQL Editor:
+
+1. [ ] **Enums & Types** - Create custom types (equipment_type, training_block_status, etc.)
+2. [ ] **Tables** - Create all tables (profiles, muscle_groups, exercises, training_blocks, etc.)
+3. [ ] **RLS Policies** - Enable Row Level Security on all tables
+4. [ ] **Indexes** - Add performance indexes (see recommended indexes below)
+5. [ ] **Seed Data** - Insert muscle_groups and exercises reference data
+
+SQL scripts location: `specs/architecture.md` contains schema, or export from current project:
+```sql
+-- Export from current Supabase project:
+-- Dashboard > Database > Schema > Export
+```
+
+### 3. Configure Authentication
+- [ ] Enable Email auth provider
+- [ ] Configure email templates (confirmation, password reset)
+- [ ] Set Site URL and Redirect URLs
+- [ ] Configure rate limiting if needed
+
+### 4. Update Local Environment
+- [ ] Update `.env.local` with new VITE_SUPABASE_URL
+- [ ] Update `.env.local` with new VITE_SUPABASE_ANON_KEY
+- [ ] Test locally with `npm run dev`
+
+### 5. Update Production (Netlify)
+- [ ] Update environment variables in Netlify dashboard
+- [ ] Trigger redeploy
+- [ ] Test production site
+
+### 6. Data Migration (if needed)
+If migrating existing users/data:
+- [ ] Export data from old project (Dashboard > Database > Backups)
+- [ ] Import into new project
+- [ ] Verify data integrity
+
+---
+
+## Recommended Database Indexes
+
+Add these indexes for better query performance at scale:
+
+```sql
+-- Training blocks: user queries their own blocks frequently
+CREATE INDEX idx_training_blocks_user_id ON training_blocks(user_id);
+CREATE INDEX idx_training_blocks_user_status ON training_blocks(user_id, status);
+
+-- Workout sessions: queried by user, block, and day
+CREATE INDEX idx_workout_sessions_user_id ON workout_sessions(user_id);
+CREATE INDEX idx_workout_sessions_block_day ON workout_sessions(training_block_id, workout_day_id);
+CREATE INDEX idx_workout_sessions_day_status ON workout_sessions(workout_day_id, status);
+
+-- Logged sets: queried by session frequently
+CREATE INDEX idx_logged_sets_session_id ON logged_sets(session_id);
+CREATE INDEX idx_logged_sets_exercise_slot ON logged_sets(exercise_slot_id);
+
+-- Exercise slots: queried by workout day
+CREATE INDEX idx_exercise_slots_workout_day ON exercise_slots(workout_day_id);
+CREATE INDEX idx_exercise_slots_day_order ON exercise_slots(workout_day_id, slot_order);
+
+-- Workout days: queried by training block
+CREATE INDEX idx_workout_days_block_id ON workout_days(training_block_id);
+
+-- Exercises: searched by muscle frequently
+CREATE INDEX idx_exercises_primary_muscle ON exercises(primary_muscle);
+CREATE INDEX idx_exercises_equipment ON exercises(equipment);
+```
+
+---
+
 *Created: 2025-12-26*
