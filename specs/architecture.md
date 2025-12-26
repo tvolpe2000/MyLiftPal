@@ -684,7 +684,199 @@ INSERT INTO public.exercises (name, aliases, equipment, primary_muscle, secondar
    '[]', NULL, 8, 15, 60, 40, true);
 ```
 
-### 3.4 TypeScript Types (Generated)
+### 3.4 Row Level Security (RLS) Policies
+
+```sql
+-- ============================================
+-- RLS POLICIES
+-- Run AFTER creating tables
+-- ============================================
+
+-- Enable RLS on all user-data tables
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.training_blocks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workout_days ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exercise_slots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workout_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.logged_sets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_volume_targets ENABLE ROW LEVEL SECURITY;
+
+-- Profiles: users can only access their own profile
+CREATE POLICY "Users can view own profile" ON public.profiles
+  FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON public.profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+-- Training blocks: users can only access their own blocks
+CREATE POLICY "Users can view own training blocks" ON public.training_blocks
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create own training blocks" ON public.training_blocks
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own training blocks" ON public.training_blocks
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own training blocks" ON public.training_blocks
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Workout days: access through training block ownership
+CREATE POLICY "Users can view workout days of own blocks" ON public.workout_days
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.training_blocks
+      WHERE training_blocks.id = workout_days.training_block_id
+      AND training_blocks.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can create workout days in own blocks" ON public.workout_days
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.training_blocks
+      WHERE training_blocks.id = training_block_id
+      AND training_blocks.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can update workout days in own blocks" ON public.workout_days
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.training_blocks
+      WHERE training_blocks.id = workout_days.training_block_id
+      AND training_blocks.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can delete workout days in own blocks" ON public.workout_days
+  FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM public.training_blocks
+      WHERE training_blocks.id = workout_days.training_block_id
+      AND training_blocks.user_id = auth.uid()
+    )
+  );
+
+-- Exercise slots: access through workout day -> training block ownership
+CREATE POLICY "Users can view exercise slots of own blocks" ON public.exercise_slots
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.workout_days
+      JOIN public.training_blocks ON training_blocks.id = workout_days.training_block_id
+      WHERE workout_days.id = exercise_slots.workout_day_id
+      AND training_blocks.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can create exercise slots in own blocks" ON public.exercise_slots
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.workout_days
+      JOIN public.training_blocks ON training_blocks.id = workout_days.training_block_id
+      WHERE workout_days.id = workout_day_id
+      AND training_blocks.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can update exercise slots in own blocks" ON public.exercise_slots
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.workout_days
+      JOIN public.training_blocks ON training_blocks.id = workout_days.training_block_id
+      WHERE workout_days.id = exercise_slots.workout_day_id
+      AND training_blocks.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can delete exercise slots in own blocks" ON public.exercise_slots
+  FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM public.workout_days
+      JOIN public.training_blocks ON training_blocks.id = workout_days.training_block_id
+      WHERE workout_days.id = exercise_slots.workout_day_id
+      AND training_blocks.user_id = auth.uid()
+    )
+  );
+
+-- Workout sessions: users can only access their own sessions
+CREATE POLICY "Users can view own workout sessions" ON public.workout_sessions
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create own workout sessions" ON public.workout_sessions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own workout sessions" ON public.workout_sessions
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own workout sessions" ON public.workout_sessions
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Logged sets: access through session ownership
+CREATE POLICY "Users can view logged sets of own sessions" ON public.logged_sets
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.workout_sessions
+      WHERE workout_sessions.id = logged_sets.session_id
+      AND workout_sessions.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can create logged sets in own sessions" ON public.logged_sets
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.workout_sessions
+      WHERE workout_sessions.id = session_id
+      AND workout_sessions.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can update logged sets in own sessions" ON public.logged_sets
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.workout_sessions
+      WHERE workout_sessions.id = logged_sets.session_id
+      AND workout_sessions.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can delete logged sets in own sessions" ON public.logged_sets
+  FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM public.workout_sessions
+      WHERE workout_sessions.id = logged_sets.session_id
+      AND workout_sessions.user_id = auth.uid()
+    )
+  );
+
+-- User volume targets: users can only access their own
+CREATE POLICY "Users can view own volume targets" ON public.user_volume_targets
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create own volume targets" ON public.user_volume_targets
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own volume targets" ON public.user_volume_targets
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Reference tables: everyone can read
+-- Muscle groups (no RLS - public read)
+-- Exercises: public read, user-created exercises restricted
+
+CREATE POLICY "Anyone can view exercises" ON public.exercises
+  FOR SELECT USING (true);
+
+CREATE POLICY "Users can create own exercises" ON public.exercises
+  FOR INSERT WITH CHECK (auth.uid() = created_by OR created_by IS NULL);
+
+CREATE POLICY "Users can update own exercises" ON public.exercises
+  FOR UPDATE USING (auth.uid() = created_by);
+
+CREATE POLICY "Users can delete own exercises" ON public.exercises
+  FOR DELETE USING (auth.uid() = created_by);
+```
+
+### 3.5 TypeScript Types (Generated)
 
 ```typescript
 // lib/types/database.ts
