@@ -82,6 +82,7 @@ Quick reference for what's done vs what's remaining.
 
 | Date | Feature |
 |------|---------|
+| 2025-12-26 | ExerciseCard muscle display (primary/secondary muscles) |
 | 2025-12-26 | Scroll wheel picker + global workout settings |
 | 2025-12-26 | RIR bug fix in quick-log |
 | 2025-12-25 | Phase 2.5: Set logging UX improvements |

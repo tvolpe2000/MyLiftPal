@@ -6,6 +6,20 @@ Chronological notes on development progress, sessions, and learnings.
 
 ## 2025-12-26
 
+### Session: ExerciseCard Muscle Display
+
+**What was done:**
+- Changed ExerciseCard to show primary/secondary muscles instead of equipment type
+- Primary muscle: accent color, bold styling for emphasis
+- Secondary muscles: muted color, up to 3 displayed
+- Shows "+N" indicator when more than 3 secondary muscles
+- Added `formatMuscle()` helper to format database names (e.g., "front_delts" → "Front Delts")
+
+**Files modified:**
+- `src/lib/components/workout/ExerciseCard.svelte` - Muscle tags instead of equipment
+
+---
+
 ### Session: Scroll Wheel Picker & Workout Settings
 
 **What was done:**
