@@ -59,6 +59,42 @@ Quick reference for what's done vs what's remaining.
 
 ---
 
+## Phase 5: LLM Security Hardening
+
+LLM integrations that can modify user data require specific security measures.
+
+### Vulnerability Scanning
+- [ ] Integrate Garak (NVIDIA's LLM vulnerability scanner) for automated testing
+- [ ] Test for prompt injection attacks (direct and indirect)
+- [ ] Test for jailbreak attempts and guardrail bypasses
+- [ ] Add Garak to CI/CD pipeline for regression testing
+
+### Input Validation Layer
+- [ ] Create input sanitization middleware for all LLM-bound requests
+- [ ] Implement prompt template system (user input never directly in prompts)
+- [ ] Add content filtering for malicious patterns
+- [ ] Validate input length and character restrictions
+
+### Output Validation Layer
+- [ ] Schema validation for all LLM responses before data mutations
+- [ ] Allowlist of permitted actions/operations
+- [ ] Reject responses that don't match expected structure
+- [ ] Log and alert on validation failures
+
+### Static Analysis & CI/CD
+- [ ] Set up Semgrep with LLM-specific rulesets
+- [ ] Add security scanning to PR checks
+- [ ] Configure dependency vulnerability scanning (npm audit, Snyk)
+- [ ] Implement pre-commit hooks for security linting
+
+### Rate Limiting & Monitoring
+- [ ] Rate limiting on LLM-powered endpoints (per-user, per-IP)
+- [ ] Anomaly detection for unusual request patterns
+- [ ] Cost monitoring and budget alerts for LLM API usage
+- [ ] Audit logging for all LLM-triggered data mutations
+
+---
+
 ## Pre-Launch Requirements
 
 - [ ] Test data seeding (demo account with workout history for testing)
@@ -100,4 +136,4 @@ Quick reference for what's done vs what's remaining.
 
 ---
 
-*Last updated: 2025-12-25*
+*Last updated: 2025-12-26*
