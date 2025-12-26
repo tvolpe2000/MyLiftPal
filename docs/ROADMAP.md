@@ -46,6 +46,14 @@ Quick reference for what's done vs what's remaining.
 
 ---
 
+## Pre-Launch Requirements
+
+- [ ] Test data seeding (demo account with workout history for testing)
+- [ ] Beta testing with real users (currently: few testers)
+- [ ] Bug fixes from beta feedback
+
+---
+
 ## Backlog / Nice-to-Have
 
 - [ ] Duplicate training block

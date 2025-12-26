@@ -25,6 +25,11 @@ Chronological notes on development progress, sessions, and learnings.
 - `src/lib/stores/workoutStore.svelte.ts` - Fetch full previous set data
 - `src/lib/components/workout/SetRow.svelte` - Display previous session
 
+**Notes:**
+- Testing limited due to lack of historical workout data
+- Added "Pre-Launch Requirements" section to roadmap including test data seeding
+- Need demo account with workout history for proper feature testing
+
 ---
 
 ### Session: Wizard Enhancements - Volume, Templates & Auto-Fill
