@@ -159,55 +159,59 @@
 					<!-- Progression Suggestion -->
 					{#if suggestion()}
 						{@const sugg = suggestion()}
-						<div class="p-3 rounded-xl bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/30">
-							<div class="flex items-center justify-between gap-3">
-								<div class="flex items-center gap-2">
-									<TrendingUp size={18} class="text-[var(--color-accent)]" />
-									<div>
-										<p class="text-sm font-medium text-[var(--color-text-primary)]">
-											{sugg.weight} lbs × {sugg.reps} reps
-											{#if sugg.weightDelta !== 0}
-												<span class="text-[var(--color-accent)] font-semibold">
-													({formatWeightDelta(sugg.weightDelta)})
-												</span>
-											{/if}
-										</p>
-										<p class="text-xs text-[var(--color-text-muted)]">{sugg.reason}</p>
+						{#if sugg}
+							<div class="p-3 rounded-xl bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/30">
+								<div class="flex items-center justify-between gap-3">
+									<div class="flex items-center gap-2">
+										<TrendingUp size={18} class="text-[var(--color-accent)]" />
+										<div>
+											<p class="text-sm font-medium text-[var(--color-text-primary)]">
+												{sugg.weight} lbs × {sugg.reps} reps
+												{#if sugg.weightDelta !== 0}
+													<span class="text-[var(--color-accent)] font-semibold">
+														({formatWeightDelta(sugg.weightDelta)})
+													</span>
+												{/if}
+											</p>
+											<p class="text-xs text-[var(--color-text-muted)]">{sugg.reason}</p>
+										</div>
 									</div>
+									<button
+										type="button"
+										onclick={applySuggestion}
+										class="px-3 py-1.5 text-xs font-medium bg-[var(--color-accent)] text-[var(--color-bg-primary)] rounded-lg hover:bg-[var(--color-accent-hover)]"
+									>
+										Apply
+									</button>
 								</div>
-								<button
-									type="button"
-									onclick={applySuggestion}
-									class="px-3 py-1.5 text-xs font-medium bg-[var(--color-accent)] text-[var(--color-bg-primary)] rounded-lg hover:bg-[var(--color-accent-hover)]"
-								>
-									Apply
-								</button>
 							</div>
-						</div>
+						{/if}
 					{/if}
 
 					<!-- Repeat Last Set -->
 					{#if previousSetInSession()}
 						{@const prev = previousSetInSession()}
-						<button
-							type="button"
-							onclick={repeatLastSet}
-							class="w-full p-3 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:border-[var(--color-accent)] flex items-center justify-between gap-3 transition-colors"
-						>
-							<div class="flex items-center gap-2">
-								<Zap size={18} class="text-[var(--color-text-muted)]" />
-								<div class="text-left">
-									<p class="text-sm font-medium text-[var(--color-text-primary)]">
-										Repeat: {prev.weight} × {prev.reps}
-										{#if prev.rir !== null}
-											<span class="text-[var(--color-text-muted)]">@{prev.rir}</span>
-										{/if}
-									</p>
-									<p class="text-xs text-[var(--color-text-muted)]">Same as previous set</p>
+						{#if prev}
+							<button
+								type="button"
+								onclick={repeatLastSet}
+								class="w-full p-3 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:border-[var(--color-accent)] flex items-center justify-between gap-3 transition-colors"
+							>
+								<div class="flex items-center gap-2">
+									<Zap size={18} class="text-[var(--color-text-muted)]" />
+									<div class="text-left">
+										<p class="text-sm font-medium text-[var(--color-text-primary)]">
+											Repeat: {prev.weight} × {prev.reps}
+											{#if prev.rir !== null}
+												<span class="text-[var(--color-text-muted)]">@{prev.rir}</span>
+											{/if}
+										</p>
+										<p class="text-xs text-[var(--color-text-muted)]">Same as previous set</p>
+									</div>
 								</div>
-							</div>
-							<span class="text-xs text-[var(--color-text-muted)]">Tap to apply</span>
-						</button>
+								<span class="text-xs text-[var(--color-text-muted)]">Tap to apply</span>
+							</button>
+						{/if}
 					{/if}
 				</div>
 			{/if}
