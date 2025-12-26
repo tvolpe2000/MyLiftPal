@@ -59,7 +59,14 @@
 	{#if exercise.isExpanded}
 		<div class="px-4 pb-4 space-y-2">
 			{#each exercise.sets as set, setIndex (set.setNumber)}
-				<SetRow {set} {exerciseIndex} {setIndex} {repRange} />
+				<SetRow
+					{set}
+					{exerciseIndex}
+					{setIndex}
+					{repRange}
+					repRangeMin={exercise.slot.rep_range_min}
+					repRangeMax={exercise.slot.rep_range_max}
+				/>
 			{/each}
 		</div>
 	{/if}

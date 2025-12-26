@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { workout } from '$lib/stores/workoutStore.svelte';
-	import { Minus, Plus, X } from 'lucide-svelte';
+	import { Minus, Plus, X, TrendingUp, Zap } from 'lucide-svelte';
+	import { getProgressionSuggestion, formatWeightDelta } from '$lib/utils/progression';
 
 	// Get current set data
 	const currentExercise = $derived(
@@ -12,19 +13,92 @@
 			: null
 	);
 
+	// Get progression suggestion based on previous session
+	const suggestion = $derived(() => {
+		if (!currentSet?.previous || !currentExercise) return null;
+		return getProgressionSuggestion(
+			currentSet.previous,
+			currentExercise.slot.rep_range_min,
+			currentExercise.slot.rep_range_max
+		);
+	});
+
 	// Input state
 	let weight = $state(0);
 	let reps = $state(0);
 	let rir = $state<number | null>(null);
 
+	// Get weight from previous set in THIS session (for auto-carry)
+	const previousSetWeight = $derived(() => {
+		if (!currentExercise || !workout.activeSetInput) return null;
+		const setIndex = workout.activeSetInput.setIndex;
+		// Look at previous sets in this exercise that are completed
+		for (let i = setIndex - 1; i >= 0; i--) {
+			const prevSet = currentExercise.sets[i];
+			if (prevSet.completed && prevSet.actualWeight !== null) {
+				return prevSet.actualWeight;
+			}
+		}
+		return null;
+	});
+
+	// Get reps from previous set in THIS session (for repeat functionality)
+	const previousSetInSession = $derived(() => {
+		if (!currentExercise || !workout.activeSetInput) return null;
+		const setIndex = workout.activeSetInput.setIndex;
+		for (let i = setIndex - 1; i >= 0; i--) {
+			const prevSet = currentExercise.sets[i];
+			if (prevSet.completed) {
+				return { weight: prevSet.actualWeight, reps: prevSet.actualReps, rir: prevSet.rir };
+			}
+		}
+		return null;
+	});
+
 	// Initialize values when modal opens
 	$effect(() => {
 		if (currentSet) {
-			weight = currentSet.actualWeight ?? currentSet.targetWeight ?? 0;
-			reps = currentSet.actualReps ?? currentSet.targetReps ?? 8;
+			const sugg = suggestion();
+			const prevWeight = previousSetWeight();
+
+			// Priority: 1) Already logged value, 2) Previous set this session, 3) Suggestion, 4) Target/default
+			if (currentSet.actualWeight !== null) {
+				// Editing an already logged set
+				weight = currentSet.actualWeight;
+				reps = currentSet.actualReps ?? 8;
+			} else if (prevWeight !== null) {
+				// Auto-carry weight from previous set this session
+				weight = prevWeight;
+				reps = sugg?.reps ?? currentSet.targetReps ?? 8;
+			} else if (sugg) {
+				// Use progression suggestion
+				weight = sugg.weight;
+				reps = sugg.reps;
+			} else {
+				// Fall back to target/default
+				weight = currentSet.targetWeight ?? 0;
+				reps = currentSet.targetReps ?? 8;
+			}
 			rir = currentSet.rir;
 		}
 	});
+
+	function applySuggestion() {
+		const sugg = suggestion();
+		if (sugg) {
+			weight = sugg.weight;
+			reps = sugg.reps;
+		}
+	}
+
+	function repeatLastSet() {
+		const prev = previousSetInSession();
+		if (prev) {
+			weight = prev.weight ?? weight;
+			reps = prev.reps ?? reps;
+			rir = prev.rir;
+		}
+	}
 
 	const repOptions = [6, 8, 10, 12, 15];
 	const rirOptions = [0, 1, 2, 3, 4];
@@ -72,6 +146,65 @@
 					<X size={20} />
 				</button>
 			</div>
+
+			<!-- Quick Actions -->
+			{#if suggestion() || previousSetInSession()}
+				<div class="mx-4 mt-4 space-y-2">
+					<!-- Progression Suggestion -->
+					{#if suggestion()}
+						{@const sugg = suggestion()}
+						<div class="p-3 rounded-xl bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/30">
+							<div class="flex items-center justify-between gap-3">
+								<div class="flex items-center gap-2">
+									<TrendingUp size={18} class="text-[var(--color-accent)]" />
+									<div>
+										<p class="text-sm font-medium text-[var(--color-text-primary)]">
+											{sugg.weight} lbs × {sugg.reps} reps
+											{#if sugg.weightDelta !== 0}
+												<span class="text-[var(--color-accent)] font-semibold">
+													({formatWeightDelta(sugg.weightDelta)})
+												</span>
+											{/if}
+										</p>
+										<p class="text-xs text-[var(--color-text-muted)]">{sugg.reason}</p>
+									</div>
+								</div>
+								<button
+									type="button"
+									onclick={applySuggestion}
+									class="px-3 py-1.5 text-xs font-medium bg-[var(--color-accent)] text-[var(--color-bg-primary)] rounded-lg hover:bg-[var(--color-accent-hover)]"
+								>
+									Apply
+								</button>
+							</div>
+						</div>
+					{/if}
+
+					<!-- Repeat Last Set -->
+					{#if previousSetInSession()}
+						{@const prev = previousSetInSession()}
+						<button
+							type="button"
+							onclick={repeatLastSet}
+							class="w-full p-3 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:border-[var(--color-accent)] flex items-center justify-between gap-3 transition-colors"
+						>
+							<div class="flex items-center gap-2">
+								<Zap size={18} class="text-[var(--color-text-muted)]" />
+								<div class="text-left">
+									<p class="text-sm font-medium text-[var(--color-text-primary)]">
+										Repeat: {prev.weight} × {prev.reps}
+										{#if prev.rir !== null}
+											<span class="text-[var(--color-text-muted)]">@{prev.rir}</span>
+										{/if}
+									</p>
+									<p class="text-xs text-[var(--color-text-muted)]">Same as previous set</p>
+								</div>
+							</div>
+							<span class="text-xs text-[var(--color-text-muted)]">Tap to apply</span>
+						</button>
+					{/if}
+				</div>
+			{/if}
 
 			<!-- Form -->
 			<div class="flex-1 overflow-y-auto p-6 space-y-8">

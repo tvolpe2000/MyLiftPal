@@ -6,6 +6,38 @@ Chronological notes on development progress, sessions, and learnings.
 
 ## 2025-12-25
 
+### Session: Phase 2 & 2.5 Completion - Intelligence & UX
+
+**What was done:**
+- Implemented progression recommendations system:
+  - Calculates suggested weight/reps based on previous session performance
+  - RIR-based logic: RIR 3+ at top of rep range → increase weight
+  - Shows suggestion banner in SetInputModal with "Apply" button
+  - Auto-fills inputs with recommended values
+- Improved set logging UX (Phase 2.5):
+  - Weight auto-carries from first set to subsequent sets in same session
+  - "Repeat Last Set" button to apply same weight/reps/RIR as previous set
+  - Quick-log button directly on SetRow (Zap icon) for one-tap logging
+  - Reduced taps needed to log a set
+
+**Technical decisions:**
+- Progression logic in `src/lib/utils/progression.ts`
+- Quick-log uses new `quickLogSet()` method in workoutStore
+- Previous set in session tracked separately from previous session data
+- SetRow changed from `<button>` to `<div>` to allow nested quick-log button
+
+**Files created:**
+- `src/lib/utils/progression.ts` - Progression calculation logic
+
+**Files modified:**
+- `src/lib/components/workout/SetInputModal.svelte` - Suggestion banner, repeat button, auto-carry
+- `src/lib/components/workout/SetRow.svelte` - Quick-log button, restructured as div
+- `src/lib/components/workout/ExerciseCard.svelte` - Pass rep range min/max
+- `src/lib/stores/workoutStore.svelte.ts` - Added quickLogSet() method
+- `docs/ROADMAP.md` - Added Phase 2.5, marked phases complete
+
+---
+
 ### Session: Previous Session Display
 
 **What was done:**

@@ -15,14 +15,23 @@ Quick reference for what's done vs what's remaining.
 
 ---
 
-## Phase 2: Intelligence 🔄 IN PROGRESS
+## Phase 2: Intelligence ✅ COMPLETE
 
 - [x] Volume calculation engine
 - [x] Volume indicators in wizard (Step 3)
 - [x] Volume indicators on training blocks list
 - [x] Volume display during workout
 - [x] Previous session display (show what you did last time for each exercise)
-- [ ] Progression recommendations (auto-suggest weight/reps based on last session)
+- [x] Progression recommendations (auto-suggest weight/reps based on last session)
+
+---
+
+## Phase 2.5: Set Logging UX ✅ COMPLETE
+
+- [x] Better number input (increment/decrement buttons vs typing)
+- [x] Weight auto-carry (first set weight carries to subsequent sets)
+- [x] "Repeat last set" quick button (one-tap to log same as previous)
+- [x] Quick-log from previous session (tap to accept suggested values)
 
 ---
 
@@ -71,6 +80,8 @@ Quick reference for what's done vs what's remaining.
 
 | Date | Feature |
 |------|---------|
+| 2025-12-25 | Phase 2.5: Set logging UX improvements |
+| 2025-12-25 | Progression recommendations (auto-suggest weight/reps) |
 | 2025-12-25 | Previous session display in workout tracking |
 | 2025-12-25 | Wizard enhancements (volume, templates, auto-fill) |
 | 2025-12-25 | Volume tracking feature |

@@ -252,6 +252,66 @@ function createWorkoutStore() {
 		state.exercises[exerciseIndex].isExpanded = !state.exercises[exerciseIndex].isExpanded;
 	}
 
+	async function quickLogSet(
+		exerciseIndex: number,
+		setIndex: number,
+		data: SetInputData
+	): Promise<boolean> {
+		if (!state.session || !auth.user) return false;
+
+		const exercise = state.exercises[exerciseIndex];
+		const set = exercise.sets[setIndex];
+
+		state.isSaving = true;
+
+		try {
+			const setData = {
+				session_id: state.session.id,
+				exercise_slot_id: exercise.slot.id,
+				exercise_id: exercise.slot.exercise.id,
+				set_number: set.setNumber,
+				target_reps: set.targetReps,
+				actual_reps: data.reps,
+				target_weight: set.targetWeight,
+				actual_weight: data.weight,
+				weight_unit: (auth.profile?.weight_unit || 'lbs') as 'lbs' | 'kg',
+				rir: data.rir,
+				completed: true,
+				logged_at: new Date().toISOString()
+			};
+
+			if (set.id) {
+				const { error } = await supabase
+					.from('logged_sets')
+					.update(setData as never)
+					.eq('id', set.id);
+				if (error) throw error;
+			} else {
+				const { data: newSetData, error } = await supabase
+					.from('logged_sets')
+					.insert(setData as never)
+					.select()
+					.single();
+				if (error) throw error;
+				const newSet = newSetData as unknown as { id: string };
+				set.id = newSet.id;
+			}
+
+			set.actualWeight = data.weight;
+			set.actualReps = data.reps;
+			set.rir = data.rir;
+			set.completed = true;
+
+			return true;
+		} catch (error) {
+			console.error('Error quick logging set:', error);
+			state.error = 'Failed to save set';
+			return false;
+		} finally {
+			state.isSaving = false;
+		}
+	}
+
 	async function logSet(data: SetInputData) {
 		if (!state.activeSetInput || !state.session || !auth.user) return;
 
@@ -438,6 +498,7 @@ function createWorkoutStore() {
 		openSetInput,
 		closeSetInput,
 		toggleExerciseExpanded,
+		quickLogSet,
 		logSet,
 		completeWorkout,
 		reset
