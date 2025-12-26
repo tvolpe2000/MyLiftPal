@@ -55,6 +55,7 @@ Quick reference for what's done vs what's remaining.
 - [ ] Performance optimization
 - [ ] Additional themes
 - [ ] "Fill to Optimal" button on wizard Step 4 (auto-add exercises until all muscles hit green volume)
+- [ ] PWA installation prompt (custom "Install App" button)
 
 ---
 
@@ -83,7 +84,6 @@ Quick reference for what's done vs what's remaining.
 
 | Date | Feature |
 |------|---------|
-| 2025-12-26 | PWA offline mode (Download Today, sync queue, offline indicator) |
 | 2025-12-26 | Time estimation (wizard Step 3 + blocks list) |
 | 2025-12-26 | ExerciseCard muscle display (primary/secondary muscles) |
 | 2025-12-26 | Scroll wheel picker + global workout settings |
@@ -100,4 +100,4 @@ Quick reference for what's done vs what's remaining.
 
 ---
 
-*Last updated: 2025-12-26*
+*Last updated: 2025-12-25*
