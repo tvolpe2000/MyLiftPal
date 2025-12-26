@@ -57,6 +57,17 @@ Chronological notes on development progress, sessions, and learnings.
 - `src/lib/components/AppShell.svelte` - OfflineIndicator
 - `src/routes/+layout.svelte` - Offline store init + event listeners
 
+**Not implemented (moved to Phase 4):**
+- PWA installation prompt - Users can install via browser menu (Chrome "Install", Safari "Add to Home Screen"), but there's no custom in-app "Install App" button. To implement:
+  - Listen for `beforeinstallprompt` event on window
+  - Store the event and show custom install button when available
+  - Call `event.prompt()` when user clicks install button
+  - Hide button after installation or if not supported
+  - Consider adding to Settings page or as a banner
+
+**Notes:**
+- SVG icons are placeholders - replace with proper 192x192 and 512x512 PNG icons for production
+
 ---
 
 ### Session: Time Estimation Feature (Phase 3)
