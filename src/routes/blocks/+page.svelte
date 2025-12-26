@@ -3,18 +3,23 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { supabase } from '$lib/db/supabase';
 	import AppShell from '$lib/components/AppShell.svelte';
-	import { Plus, Calendar, Dumbbell, ChevronRight, Play, Pause, CheckCircle, BarChart3 } from 'lucide-svelte';
+	import { Plus, Calendar, Dumbbell, ChevronRight, Play, Pause, CheckCircle, BarChart3, Clock } from 'lucide-svelte';
 	import { calculateWeeklyVolume, getVolumeBarColor } from '$lib/utils/volume';
 	import type { MuscleVolume, MuscleGroupData, ExerciseForVolume } from '$lib/utils/volume';
+	import { calculateDayTime } from '$lib/utils/time';
+	import type { ExerciseSlotForTime } from '$lib/utils/time';
 	import type { TrainingBlockStatus, SecondaryMuscle } from '$lib/types/database';
 	import { calculateSetsForWeek } from '$lib/types/wizard';
 
 	interface ExerciseSlotData {
 		base_sets: number;
 		set_progression: number;
+		rest_seconds: number | null;
 		exercise: {
 			primary_muscle: string;
 			secondary_muscles: SecondaryMuscle[];
+			work_seconds: number;
+			default_rest_seconds: number;
 		};
 	}
 
@@ -85,9 +90,12 @@
 					exercise_slots (
 						base_sets,
 						set_progression,
+						rest_seconds,
 						exercise:exercises (
 							primary_muscle,
-							secondary_muscles
+							secondary_muscles,
+							work_seconds,
+							default_rest_seconds
 						)
 					)
 				)
@@ -127,6 +135,32 @@
 		}
 
 		return calculateWeeklyVolume(exercises, muscleGroups);
+	}
+
+	// Calculate total estimated time per week for a block
+	function getBlockTime(block: TrainingBlock): number {
+		if (!block.workout_days) return 0;
+
+		let totalMinutes = 0;
+
+		for (const day of block.workout_days) {
+			const slotsForTime: ExerciseSlotForTime[] = (day.exercise_slots || []).map((slot) => ({
+				baseSets: slot.base_sets,
+				setProgression: slot.set_progression,
+				restSeconds: slot.rest_seconds,
+				exercise: slot.exercise
+					? {
+							work_seconds: slot.exercise.work_seconds ?? 45,
+							default_rest_seconds: slot.exercise.default_rest_seconds ?? 90
+						}
+					: undefined
+			}));
+
+			const dayTime = calculateDayTime(slotsForTime, block.current_week, null, day.id, day.name);
+			totalMinutes += dayTime.totalMinutes;
+		}
+
+		return totalMinutes;
 	}
 
 	function getStatusIcon(status: TrainingBlockStatus) {
@@ -210,6 +244,7 @@
 							{@const topVolumes = volumes.slice(0, 5)}
 							{@const lowCount = volumes.filter((v: MuscleVolume) => v.status === 'low').length}
 							{@const goodCount = volumes.filter((v: MuscleVolume) => v.status === 'good').length}
+							{@const totalTime = getBlockTime(block)}
 							<a
 								href="/blocks/{block.id}"
 								class="block bg-[var(--color-bg-secondary)] rounded-xl p-5 hover:bg-[var(--color-bg-tertiary)] transition-colors"
@@ -237,6 +272,12 @@
 												<Dumbbell size={14} class="text-[var(--color-text-muted)]" />
 												<span>{block.workout_days?.length || 0} days/week</span>
 											</div>
+											{#if totalTime > 0}
+												<div class="flex items-center gap-1.5">
+													<Clock size={14} class="text-[var(--color-text-muted)]" />
+													<span>~{totalTime} min/week</span>
+												</div>
+											{/if}
 										</div>
 
 										{#if block.status === 'active'}

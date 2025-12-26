@@ -3,9 +3,11 @@
 	import { supabase } from '$lib/db/supabase';
 	import type { Exercise } from '$lib/types';
 	import { createDefaultExerciseSlot } from '$lib/types/wizard';
-	import { Plus, Trash2, ChevronDown, ChevronUp, Filter, BarChart3, Wand2, Sparkles } from 'lucide-svelte';
+	import { Plus, Trash2, ChevronDown, ChevronUp, Filter, BarChart3, Wand2, Sparkles, Clock } from 'lucide-svelte';
 	import { calculateWeeklyVolume, getVolumeBarColor } from '$lib/utils/volume';
 	import type { MuscleVolume, MuscleGroupData, ExerciseForVolume } from '$lib/utils/volume';
+	import { calculateDayTime, getTimeBarColor, getTimeRange } from '$lib/utils/time';
+	import type { ExerciseSlotForTime, DayTimeEstimate } from '$lib/utils/time';
 
 	let exercises = $state<Exercise[]>([]);
 	let muscleGroupsData = $state<MuscleGroupData[]>([]);
@@ -17,6 +19,7 @@
 	let selectedEquipment = $state<string | null>(null);
 	let selectedMuscle = $state<string | null>(null);
 	let showVolume = $state(true);
+	let showTime = $state(true);
 	let showSuggestions = $state<string | null>(null); // dayId or null
 
 	const equipmentTypes = ['barbell', 'dumbbell', 'cable', 'machine', 'bodyweight'];
@@ -80,6 +83,52 @@
 		const goodCount = weeklyVolumes.filter((v: MuscleVolume) => v.status === 'good').length;
 		const highCount = weeklyVolumes.filter((v: MuscleVolume) => v.status === 'high' || v.status === 'excessive').length;
 		return { lowCount, goodCount, highCount };
+	});
+
+	// Time estimates for all days (Week 1 and final week)
+	const dayTimeEstimates = $derived.by(() => {
+		const estimates: Map<string, { week1: DayTimeEstimate; final: DayTimeEstimate }> = new Map();
+
+		for (const day of wizard.workoutDays) {
+			const slots = wizard.exerciseSlots[day.id] || [];
+			const slotsForTime: ExerciseSlotForTime[] = slots.map((slot) => ({
+				baseSets: slot.baseSets,
+				setProgression: slot.setProgression,
+				restSeconds: slot.restSeconds,
+				exercise: slot.exercise
+					? {
+							work_seconds: slot.exercise.work_seconds ?? 45,
+							default_rest_seconds: slot.exercise.default_rest_seconds ?? 90
+						}
+					: undefined
+			}));
+
+			const budget = day.timeBudgetMinutes ?? wizard.timeBudgetMinutes;
+
+			estimates.set(day.id, {
+				week1: calculateDayTime(slotsForTime, 1, budget, day.id, day.name),
+				final: calculateDayTime(slotsForTime, wizard.totalWeeks, budget, day.id, day.name)
+			});
+		}
+
+		return estimates;
+	});
+
+	// Time summary stats
+	const timeStats = $derived.by(() => {
+		let totalWeek1 = 0;
+		let totalFinal = 0;
+		let overBudgetCount = 0;
+
+		dayTimeEstimates.forEach((est) => {
+			totalWeek1 += est.week1.totalMinutes;
+			totalFinal += est.final.totalMinutes;
+			if (est.final.status === 'over' || est.final.status === 'way_over') {
+				overBudgetCount++;
+			}
+		});
+
+		return { totalWeek1, totalFinal, overBudgetCount };
 	});
 
 	// Equipment priority for sorting (compounds first)
@@ -239,6 +288,7 @@
 		{#each wizard.workoutDays as day (day.id)}
 			{@const dayExercises = wizard.getExercisesForDay(day.id)}
 			{@const isExpanded = expandedDay === day.id}
+			{@const timeEst = dayTimeEstimates.get(day.id)}
 
 			<div class="bg-[var(--color-bg-secondary)] rounded-xl overflow-hidden">
 				<!-- Day Header -->
@@ -255,9 +305,16 @@
 						</span>
 						<div class="text-left">
 							<span class="font-medium text-[var(--color-text-primary)]">{day.name}</span>
-							<span class="text-sm text-[var(--color-text-muted)] ml-2">
-								{dayExercises.length} exercise{dayExercises.length !== 1 ? 's' : ''}
-							</span>
+							<div class="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+								<span>{dayExercises.length} exercise{dayExercises.length !== 1 ? 's' : ''}</span>
+								{#if timeEst && dayExercises.length > 0}
+									<span>·</span>
+									<span class="flex items-center gap-1">
+										<Clock size={12} />
+										{getTimeRange(timeEst.week1.totalMinutes, timeEst.final.totalMinutes)}
+									</span>
+								{/if}
+							</div>
 						</div>
 					</div>
 					{#if isExpanded}
@@ -453,6 +510,90 @@
 						</span>
 						<span class="flex items-center gap-1">
 							<span class="w-2 h-2 rounded-full bg-yellow-500"></span> High
+						</span>
+					</div>
+				</div>
+			{/if}
+		</div>
+	{/if}
+
+	<!-- Estimated Time Summary -->
+	{#if wizard.workoutDays.some((d) => (wizard.exerciseSlots[d.id] || []).length > 0)}
+		<div class="bg-[var(--color-bg-secondary)] rounded-xl overflow-hidden">
+			<button
+				type="button"
+				onclick={() => (showTime = !showTime)}
+				class="w-full flex items-center justify-between p-4 hover:bg-[var(--color-bg-tertiary)] transition-colors"
+			>
+				<div class="flex items-center gap-3">
+					<Clock size={20} class="text-[var(--color-accent)]" />
+					<div class="text-left">
+						<span class="font-medium text-[var(--color-text-primary)]">Estimated Time</span>
+						<div class="flex items-center gap-2 mt-0.5">
+							<span class="text-[10px] bg-[var(--color-bg-tertiary)] text-[var(--color-text-muted)] px-1.5 py-0.5 rounded">
+								{timeStats.totalWeek1}-{timeStats.totalFinal} min/week
+							</span>
+							{#if timeStats.overBudgetCount > 0}
+								<span class="text-[10px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">
+									{timeStats.overBudgetCount} over budget
+								</span>
+							{/if}
+						</div>
+					</div>
+				</div>
+				{#if showTime}
+					<ChevronUp size={20} class="text-[var(--color-text-muted)]" />
+				{:else}
+					<ChevronDown size={20} class="text-[var(--color-text-muted)]" />
+				{/if}
+			</button>
+
+			{#if showTime}
+				<div class="p-4 pt-0 space-y-2">
+					{#each wizard.workoutDays as day (day.id)}
+						{@const timeEst = dayTimeEstimates.get(day.id)}
+						{@const daySlots = wizard.exerciseSlots[day.id] || []}
+						{#if timeEst && daySlots.length > 0}
+							{@const barColor = getTimeBarColor(timeEst.final.status)}
+							{@const statusColor =
+								timeEst.final.status === 'under'
+									? 'text-blue-400'
+									: timeEst.final.status === 'on_target'
+										? 'text-green-400'
+										: timeEst.final.status === 'over'
+											? 'text-yellow-400'
+											: 'text-red-400'}
+							<div class="flex items-center gap-3">
+								<span class="text-sm text-[var(--color-text-secondary)] min-w-[90px] truncate">
+									{day.name}
+								</span>
+								<div class="flex-1 h-2 bg-[var(--color-bg-tertiary)] rounded-full overflow-hidden">
+									{#if timeEst.final.budgetMinutes}
+										<div
+											class="h-full rounded-full {barColor}"
+											style="width: {Math.min((timeEst.final.totalMinutes / timeEst.final.budgetMinutes) * 100, 100)}%"
+										></div>
+									{:else}
+										<div class="h-full rounded-full bg-[var(--color-accent)]" style="width: 75%"></div>
+									{/if}
+								</div>
+								<span class="text-sm font-medium min-w-[70px] text-right {statusColor}">
+									{getTimeRange(timeEst.week1.totalMinutes, timeEst.final.totalMinutes)}
+								</span>
+							</div>
+						{/if}
+					{/each}
+
+					<!-- Legend -->
+					<div class="mt-3 pt-3 border-t border-[var(--color-border)] flex items-center justify-center gap-4 text-[10px] text-[var(--color-text-muted)]">
+						<span class="flex items-center gap-1">
+							<span class="w-2 h-2 rounded-full bg-blue-500"></span> Under
+						</span>
+						<span class="flex items-center gap-1">
+							<span class="w-2 h-2 rounded-full bg-green-500"></span> On Target
+						</span>
+						<span class="flex items-center gap-1">
+							<span class="w-2 h-2 rounded-full bg-yellow-500"></span> Over
 						</span>
 					</div>
 				</div>

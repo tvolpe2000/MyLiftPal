@@ -6,6 +6,37 @@ Chronological notes on development progress, sessions, and learnings.
 
 ## 2025-12-26
 
+### Session: Time Estimation Feature (Phase 3)
+
+**What was done:**
+- Created time estimation utility (`src/lib/utils/time.ts`):
+  - Types: `TimeStatus`, `ExerciseSlotForTime`, `DayTimeEstimate`
+  - Functions: `calculateDayTime()`, `getTimeStatus()`, `getTimeColorClass()`, `getTimeBarColor()`, `formatDuration()`, `getTimeRange()`
+  - Uses exercise `work_seconds` and `default_rest_seconds` for accurate estimates
+  - Accounts for set progression across weeks (week 1 vs final week)
+- Added time estimation to wizard Step 3 (StepAddExercises.svelte):
+  - Time badge on each day header showing estimated duration
+  - Collapsible "Estimated Time" summary section
+  - Per-day progress bars with status colors (under/on target/over budget)
+  - Shows week 1 to final week time range
+- Added time estimation to training blocks list:
+  - Clock icon with estimated total minutes per week
+  - Calculates based on current week's set count
+
+**Technical decisions:**
+- Time calculation: `(sets * work_seconds) + ((sets-1) * rest_seconds) + (exercise_count * 30s transition)`
+- Status thresholds: Under (<-10%), On Target (±10%), Over (+10-25%), Way Over (>+25%)
+- Colors: Blue (under), Green (on target), Yellow (over), Red (way over)
+
+**Files created:**
+- `src/lib/utils/time.ts` - Time calculation utility
+
+**Files modified:**
+- `src/lib/components/wizard/StepAddExercises.svelte` - Time summary section
+- `src/routes/blocks/+page.svelte` - Time display on block cards
+
+---
+
 ### Session: ExerciseCard Muscle Display
 
 **What was done:**
