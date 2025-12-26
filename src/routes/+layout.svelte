@@ -3,6 +3,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
+	import { workoutSettings } from '$lib/stores/workoutSettings.svelte';
 	import { onMount } from 'svelte';
 
 	let { children } = $props();
@@ -10,6 +11,7 @@
 	onMount(() => {
 		auth.initialize();
 		theme.initialize();
+		workoutSettings.initialize();
 	});
 </script>
 

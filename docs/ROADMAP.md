@@ -28,10 +28,12 @@ Quick reference for what's done vs what's remaining.
 
 ## Phase 2.5: Set Logging UX ✅ COMPLETE
 
-- [x] Better number input (increment/decrement buttons vs typing)
+- [x] Scroll wheel picker for weight (iOS-style with configurable increment)
+- [x] Scroll wheel picker for reps (optional, toggle in settings)
 - [x] Weight auto-carry (first set weight carries to subsequent sets)
 - [x] "Repeat last set" quick button (one-tap to log same as previous)
 - [x] Quick-log from previous session (tap to accept suggested values)
+- [x] Global workout settings (weight style, rep style, increment)
 
 ---
 
@@ -80,6 +82,8 @@ Quick reference for what's done vs what's remaining.
 
 | Date | Feature |
 |------|---------|
+| 2025-12-26 | Scroll wheel picker + global workout settings |
+| 2025-12-26 | RIR bug fix in quick-log |
 | 2025-12-25 | Phase 2.5: Set logging UX improvements |
 | 2025-12-25 | Progression recommendations (auto-suggest weight/reps) |
 | 2025-12-25 | Previous session display in workout tracking |

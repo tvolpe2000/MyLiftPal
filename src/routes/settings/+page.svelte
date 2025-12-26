@@ -3,8 +3,9 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import AppShell from '$lib/components/AppShell.svelte';
 	import { supabase } from '$lib/db/supabase';
-	import { User, Scale, Palette, LogOut } from 'lucide-svelte';
+	import { User, Scale, Palette, LogOut, Dumbbell } from 'lucide-svelte';
 	import ThemeSelector from '$lib/components/ThemeSelector.svelte';
+	import { workoutSettings, type WeightInputStyle, type WeightIncrement } from '$lib/stores/workoutSettings.svelte';
 
 	let displayName = $state(auth.profile?.display_name || '');
 	let weightUnit = $state<'lbs' | 'kg'>(auth.profile?.weight_unit || 'lbs');
@@ -155,6 +156,94 @@
 							<h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Theme</h2>
 						</div>
 						<ThemeSelector />
+					</div>
+
+					<!-- Workout Preferences Section -->
+					<div class="bg-[var(--color-bg-secondary)] rounded-xl p-6">
+						<div class="flex items-center gap-3 mb-6">
+							<Dumbbell size={20} class="text-[var(--color-accent)]" />
+							<h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Workout Input</h2>
+						</div>
+
+						<div class="space-y-6">
+							<!-- Weight Input Style -->
+							<div role="group" aria-labelledby="weight-input-style-label">
+								<span id="weight-input-style-label" class="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+									Weight Input Style
+								</span>
+								<div class="flex gap-3">
+									<button
+										onclick={() => workoutSettings.setWeightInputStyle('scroll')}
+										class="flex-1 py-3 rounded-lg font-medium transition-colors {workoutSettings.weightInputStyle === 'scroll' ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]' : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'}"
+									>
+										Scroll Wheel
+									</button>
+									<button
+										onclick={() => workoutSettings.setWeightInputStyle('buttons')}
+										class="flex-1 py-3 rounded-lg font-medium transition-colors {workoutSettings.weightInputStyle === 'buttons' ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]' : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'}"
+									>
+										+/- Buttons
+									</button>
+								</div>
+							</div>
+
+							<!-- Default Weight Increment -->
+							<div role="group" aria-labelledby="weight-increment-label">
+								<span id="weight-increment-label" class="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+									Default Weight Increment
+								</span>
+								<div class="flex gap-2">
+									{#each [2.5, 5, 10] as inc}
+										<button
+											onclick={() => workoutSettings.setDefaultWeightIncrement(inc as WeightIncrement)}
+											class="flex-1 py-3 rounded-lg font-medium transition-colors {workoutSettings.defaultWeightIncrement === inc ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]' : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'}"
+										>
+											{inc} lbs
+										</button>
+									{/each}
+								</div>
+							</div>
+
+							<!-- Rep Input Style -->
+							<div role="group" aria-labelledby="rep-input-style-label">
+								<span id="rep-input-style-label" class="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+									Rep Input Style
+								</span>
+								<div class="flex gap-3">
+									<button
+										onclick={() => workoutSettings.setRepInputStyle('buttons')}
+										class="flex-1 py-3 rounded-lg font-medium transition-colors {workoutSettings.repInputStyle === 'buttons' ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]' : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'}"
+									>
+										Quick Select
+									</button>
+									<button
+										onclick={() => workoutSettings.setRepInputStyle('scroll')}
+										class="flex-1 py-3 rounded-lg font-medium transition-colors {workoutSettings.repInputStyle === 'scroll' ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]' : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'}"
+									>
+										Scroll Wheel
+									</button>
+								</div>
+							</div>
+
+							<!-- Rep Quick-Select Values (only show if using buttons) -->
+							{#if workoutSettings.repInputStyle === 'buttons'}
+								<div>
+									<span class="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+										Rep Quick-Select Values
+									</span>
+									<div class="flex flex-wrap gap-2">
+										{#each workoutSettings.repQuickSelectValues as rep}
+											<div class="px-4 py-2 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] font-medium">
+												{rep}
+											</div>
+										{/each}
+									</div>
+									<p class="text-xs text-[var(--color-text-muted)] mt-2">
+										Customize coming soon
+									</p>
+								</div>
+							{/if}
+						</div>
 					</div>
 
 					<!-- Save Button -->

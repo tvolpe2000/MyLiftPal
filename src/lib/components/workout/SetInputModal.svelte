@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { workout } from '$lib/stores/workoutStore.svelte';
+	import { workoutSettings, type WeightIncrement } from '$lib/stores/workoutSettings.svelte';
 	import { Minus, Plus, X, TrendingUp, Zap } from 'lucide-svelte';
 	import { getProgressionSuggestion, formatWeightDelta } from '$lib/utils/progression';
+	import ScrollWheelPicker from '$lib/components/ui/ScrollWheelPicker.svelte';
+
+	// Local increment state (can be changed per-session)
+	let currentIncrement = $state<WeightIncrement>(workoutSettings.defaultWeightIncrement);
 
 	// Get current set data
 	const currentExercise = $derived(
@@ -100,8 +105,9 @@
 		}
 	}
 
-	const repOptions = [6, 8, 10, 12, 15];
+	const repOptions = $derived(workoutSettings.repQuickSelectValues);
 	const rirOptions = [0, 1, 2, 3, 4];
+	const incrementOptions: WeightIncrement[] = [2.5, 5, 10];
 
 	function adjustWeight(delta: number) {
 		weight = Math.max(0, weight + delta);
@@ -213,27 +219,69 @@
 					<label class="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
 						Weight (lbs)
 					</label>
-					<div class="flex items-center justify-center gap-4">
-						<button
-							type="button"
-							onclick={() => adjustWeight(-5)}
-							class="w-14 h-14 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] flex items-center justify-center"
-						>
-							<Minus size={24} />
-						</button>
-						<input
-							type="number"
+
+					{#if workoutSettings.weightInputStyle === 'scroll'}
+						<!-- Scroll Wheel Picker -->
+						<ScrollWheelPicker
 							bind:value={weight}
-							class="w-32 text-center text-4xl font-bold bg-transparent text-[var(--color-text-primary)] focus:outline-none"
+							min={0}
+							max={500}
+							step={currentIncrement}
 						/>
-						<button
-							type="button"
-							onclick={() => adjustWeight(5)}
-							class="w-14 h-14 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] flex items-center justify-center"
-						>
-							<Plus size={24} />
-						</button>
-					</div>
+						<!-- Increment Toggle -->
+						<div class="flex justify-center gap-2 mt-3">
+							{#each incrementOptions as inc}
+								<button
+									type="button"
+									onclick={() => currentIncrement = inc}
+									class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {currentIncrement === inc
+										? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+										: 'bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-tertiary)]'}"
+								>
+									{inc}
+								</button>
+							{/each}
+							<span class="text-sm text-[var(--color-text-muted)] self-center ml-1">lbs</span>
+						</div>
+					{:else}
+						<!-- Button-based Input -->
+						<div class="flex items-center justify-center gap-4">
+							<button
+								type="button"
+								onclick={() => adjustWeight(-currentIncrement)}
+								class="w-14 h-14 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] flex items-center justify-center"
+							>
+								<Minus size={24} />
+							</button>
+							<input
+								type="number"
+								bind:value={weight}
+								class="w-32 text-center text-4xl font-bold bg-transparent text-[var(--color-text-primary)] focus:outline-none"
+							/>
+							<button
+								type="button"
+								onclick={() => adjustWeight(currentIncrement)}
+								class="w-14 h-14 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] flex items-center justify-center"
+							>
+								<Plus size={24} />
+							</button>
+						</div>
+						<!-- Increment Toggle for buttons too -->
+						<div class="flex justify-center gap-2 mt-3">
+							{#each incrementOptions as inc}
+								<button
+									type="button"
+									onclick={() => currentIncrement = inc}
+									class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {currentIncrement === inc
+										? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+										: 'bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-tertiary)]'}"
+								>
+									{inc}
+								</button>
+							{/each}
+							<span class="text-sm text-[var(--color-text-muted)] self-center ml-1">lbs</span>
+						</div>
+					{/if}
 				</div>
 
 				<!-- Reps Input -->
@@ -241,38 +289,50 @@
 					<label class="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
 						Reps
 					</label>
-					<div class="flex items-center justify-center gap-2">
-						{#each repOptions as option}
+
+					{#if workoutSettings.repInputStyle === 'scroll'}
+						<!-- Scroll Wheel for Reps -->
+						<ScrollWheelPicker
+							bind:value={reps}
+							min={1}
+							max={30}
+							step={1}
+						/>
+					{:else}
+						<!-- Quick-Select Buttons -->
+						<div class="flex items-center justify-center gap-2">
+							{#each repOptions as option}
+								<button
+									type="button"
+									onclick={() => (reps = option)}
+									class="w-12 h-12 rounded-full font-semibold transition-colors {reps === option
+										? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+										: 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]'}"
+								>
+									{option}
+								</button>
+							{/each}
+						</div>
+						<div class="flex items-center justify-center gap-4 mt-3">
 							<button
 								type="button"
-								onclick={() => (reps = option)}
-								class="w-12 h-12 rounded-full font-semibold transition-colors {reps === option
-									? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
-									: 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]'}"
+								onclick={() => (reps = Math.max(1, reps - 1))}
+								class="w-10 h-10 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] flex items-center justify-center"
 							>
-								{option}
+								<Minus size={18} />
 							</button>
-						{/each}
-					</div>
-					<div class="flex items-center justify-center gap-4 mt-3">
-						<button
-							type="button"
-							onclick={() => (reps = Math.max(1, reps - 1))}
-							class="w-10 h-10 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] flex items-center justify-center"
-						>
-							<Minus size={18} />
-						</button>
-						<span class="text-2xl font-bold text-[var(--color-text-primary)] w-12 text-center">
-							{reps}
-						</span>
-						<button
-							type="button"
-							onclick={() => (reps = reps + 1)}
-							class="w-10 h-10 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] flex items-center justify-center"
-						>
-							<Plus size={18} />
-						</button>
-					</div>
+							<span class="text-2xl font-bold text-[var(--color-text-primary)] w-12 text-center">
+								{reps}
+							</span>
+							<button
+								type="button"
+								onclick={() => (reps = reps + 1)}
+								class="w-10 h-10 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] flex items-center justify-center"
+							>
+								<Plus size={18} />
+							</button>
+						</div>
+					{/if}
 				</div>
 
 				<!-- RIR Input -->

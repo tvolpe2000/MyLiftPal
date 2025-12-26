@@ -4,6 +4,43 @@ Chronological notes on development progress, sessions, and learnings.
 
 ---
 
+## 2025-12-26
+
+### Session: Scroll Wheel Picker & Workout Settings
+
+**What was done:**
+- Fixed RIR bug in quick-log (was hardcoded to null)
+- Created iOS-style scroll wheel picker:
+  - CSS scroll-snap for native momentum scrolling
+  - Configurable increment for weight (2.5, 5, 10 lbs)
+  - Fade overlays and selection indicator
+  - Works for both weight and reps
+- Added global workout settings:
+  - Weight input style (scroll wheel vs buttons)
+  - Rep input style (quick-select vs scroll wheel)
+  - Default weight increment
+  - Settings persisted to localStorage
+- Integrated scroll wheel into SetInputModal for weight and reps
+
+**Technical decisions:**
+- Settings in localStorage (not DB) for speed and simplicity
+- ScrollWheelPicker uses scroll-snap-type: y mandatory
+- Increment toggle in-modal for quick switching during workout
+- Both scroll and button modes support configurable increment
+- Reps scroll wheel uses step=1, range 1-30
+
+**Files created:**
+- `src/lib/components/ui/ScrollWheelPicker.svelte` - Reusable scroll wheel input
+- `src/lib/stores/workoutSettings.svelte.ts` - Workout preferences state
+
+**Files modified:**
+- `src/lib/components/workout/SetRow.svelte` - Fixed RIR bug in quickLogData
+- `src/lib/components/workout/SetInputModal.svelte` - Scroll wheel for weight & reps
+- `src/routes/settings/+page.svelte` - Workout Input settings section
+- `src/routes/+layout.svelte` - Initialize workout settings
+
+---
+
 ## 2025-12-25
 
 ### Session: Phase 2 & 2.5 Completion - Intelligence & UX

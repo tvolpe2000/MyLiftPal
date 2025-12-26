@@ -23,14 +23,18 @@
 		return getProgressionSuggestion(set.previous, repRangeMin, repRangeMax);
 	});
 
-	// Check for previous set in current session (for weight carry)
-	const previousSetWeight = $derived(() => {
+	// Check for previous set in current session (for weight/reps/RIR carry)
+	const previousSetInSession = $derived(() => {
 		const exercise = workout.exercises[exerciseIndex];
 		if (!exercise) return null;
 		for (let i = setIndex - 1; i >= 0; i--) {
 			const prevSet = exercise.sets[i];
 			if (prevSet.completed && prevSet.actualWeight !== null) {
-				return prevSet.actualWeight;
+				return {
+					weight: prevSet.actualWeight,
+					reps: prevSet.actualReps,
+					rir: prevSet.rir
+				};
 			}
 		}
 		return null;
@@ -38,12 +42,16 @@
 
 	// Quick log data: use previous set this session, or suggestion
 	const quickLogData = $derived(() => {
-		const prev = previousSetWeight();
+		const prev = previousSetInSession();
 		const sugg = suggestion();
 		if (prev !== null) {
-			// Use weight from previous set this session
+			// Use data from previous set this session (carries weight, reps, RIR)
 			const midReps = Math.round((repRangeMin + repRangeMax) / 2);
-			return { weight: prev, reps: sugg?.reps ?? midReps, rir: null };
+			return {
+				weight: prev.weight,
+				reps: prev.reps ?? sugg?.reps ?? midReps,
+				rir: prev.rir  // Carry RIR from previous set
+			};
 		}
 		if (sugg) {
 			return { weight: sugg.weight, reps: sugg.reps, rir: null };
