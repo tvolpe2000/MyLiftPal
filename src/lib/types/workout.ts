@@ -28,6 +28,13 @@ export interface TrainingBlockWithDays {
 	workout_days: WorkoutDay[];
 }
 
+// Previous session data for a set
+export interface PreviousSetData {
+	weight: number | null;
+	reps: number | null;
+	rir: number | null;
+}
+
 // UI state for individual sets
 export interface SetState {
 	id: string | null; // null for unsaved sets
@@ -38,6 +45,7 @@ export interface SetState {
 	actualReps: number | null;
 	rir: number | null;
 	completed: boolean;
+	previous: PreviousSetData | null; // What user did last session
 }
 
 // UI state for exercises with their sets

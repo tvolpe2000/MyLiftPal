@@ -21,8 +21,8 @@ Quick reference for what's done vs what's remaining.
 - [x] Volume indicators in wizard (Step 3)
 - [x] Volume indicators on training blocks list
 - [x] Volume display during workout
+- [x] Previous session display (show what you did last time for each exercise)
 - [ ] Progression recommendations (auto-suggest weight/reps based on last session)
-- [ ] Previous session display (show what you did last time for each exercise)
 
 ---
 
@@ -63,6 +63,7 @@ Quick reference for what's done vs what's remaining.
 
 | Date | Feature |
 |------|---------|
+| 2025-12-25 | Previous session display in workout tracking |
 | 2025-12-25 | Wizard enhancements (volume, templates, auto-fill) |
 | 2025-12-25 | Volume tracking feature |
 | 2025-12-25 | Home page with Today's Workout |

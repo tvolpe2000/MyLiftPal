@@ -6,6 +6,27 @@ Chronological notes on development progress, sessions, and learnings.
 
 ## 2025-12-25
 
+### Session: Previous Session Display
+
+**What was done:**
+- Added previous session data display in workout tracking
+- Each set row now shows what you did last time (weight × reps @RIR)
+- Uses History icon with "Last: 135 × 10 @2" format
+- Only shows for sets that have previous data
+
+**Technical decisions:**
+- Added `PreviousSetData` interface to workout types
+- Extended `SetState` to include `previous` field
+- Store fetches full previous set data (weight, reps, RIR) not just weight
+- Previous data keyed by `exercise_slot_id-set_number`
+
+**Files modified:**
+- `src/lib/types/workout.ts` - Added PreviousSetData interface
+- `src/lib/stores/workoutStore.svelte.ts` - Fetch full previous set data
+- `src/lib/components/workout/SetRow.svelte` - Display previous session
+
+---
+
 ### Session: Wizard Enhancements - Volume, Templates & Auto-Fill
 
 **What was done:**

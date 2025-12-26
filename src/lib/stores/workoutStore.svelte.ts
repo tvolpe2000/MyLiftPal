@@ -172,8 +172,8 @@ function createWorkoutStore() {
 		const sessionWithSets = state.session as (WorkoutSession & { logged_sets?: LoggedSet[] }) | null;
 		const existingLoggedSets = sessionWithSets?.logged_sets || [];
 
-		// Fetch previous session for target weights
-		const previousWeights: Record<string, number> = {};
+		// Fetch previous session for all set data (weight, reps, RIR)
+		const previousSets: Record<string, { weight: number | null; reps: number | null; rir: number | null }> = {};
 		if (state.currentWorkoutDay) {
 			const { data: prevSessionData } = await supabase
 				.from('workout_sessions')
@@ -189,7 +189,11 @@ function createWorkoutStore() {
 				if (prevSession.logged_sets) {
 					for (const set of prevSession.logged_sets) {
 						const key = `${set.exercise_slot_id}-${set.set_number}`;
-						previousWeights[key] = set.actual_weight || 0;
+						previousSets[key] = {
+							weight: set.actual_weight,
+							reps: set.actual_reps,
+							rir: set.rir
+						};
 					}
 				}
 			}
@@ -209,18 +213,19 @@ function createWorkoutStore() {
 					(ls: LoggedSet) => ls.exercise_slot_id === slot.id && ls.set_number === i
 				);
 
-				const targetWeightKey = `${slot.id}-${i}`;
-				const targetWeight = previousWeights[targetWeightKey] || null;
+				const prevKey = `${slot.id}-${i}`;
+				const prevSetData = previousSets[prevKey] || null;
 
 				sets.push({
 					id: existingSet?.id || null,
 					setNumber: i,
-					targetWeight,
+					targetWeight: prevSetData?.weight || null,
 					targetReps: Math.round((slot.rep_range_min + slot.rep_range_max) / 2),
 					actualWeight: existingSet?.actual_weight || null,
 					actualReps: existingSet?.actual_reps || null,
 					rir: existingSet?.rir ?? null,
-					completed: existingSet?.completed || false
+					completed: existingSet?.completed || false,
+					previous: prevSetData
 				});
 			}
 

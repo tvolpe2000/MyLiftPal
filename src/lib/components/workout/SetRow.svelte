@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { workout } from '$lib/stores/workoutStore.svelte';
-	import { Check } from 'lucide-svelte';
+	import { Check, History } from 'lucide-svelte';
 	import type { SetState } from '$lib/types/workout';
 
 	let { set, exerciseIndex, setIndex, repRange } = $props<{
@@ -13,6 +13,16 @@
 	function handleClick() {
 		workout.openSetInput(exerciseIndex, setIndex);
 	}
+
+	// Format previous session data
+	const previousDisplay = $derived(() => {
+		if (!set.previous || set.previous.weight === null) return null;
+		let text = `${set.previous.weight} × ${set.previous.reps}`;
+		if (set.previous.rir !== null) {
+			text += ` @${set.previous.rir}`;
+		}
+		return text;
+	});
 </script>
 
 <button
@@ -35,19 +45,27 @@
 		{/if}
 	</div>
 
-	<!-- Target -->
+	<!-- Target & Previous -->
 	<div class="flex-1 text-left">
 		{#if set.completed}
 			<div class="text-[var(--color-text-primary)] font-medium">
-				{set.actualWeight} x {set.actualReps}
+				{set.actualWeight} × {set.actualReps}
 				{#if set.rir !== null}
 					<span class="text-[var(--color-text-muted)] text-sm ml-1">@{set.rir} RIR</span>
 				{/if}
 			</div>
 		{:else}
+			<!-- Previous session data -->
+			{#if previousDisplay()}
+				<div class="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] mb-0.5">
+					<History size={12} />
+					<span>Last: {previousDisplay()}</span>
+				</div>
+			{/if}
+			<!-- Current target -->
 			<div class="text-[var(--color-text-secondary)]">
 				{#if set.targetWeight}
-					<span class="text-[var(--color-text-primary)]">{set.targetWeight}</span> x
+					<span class="text-[var(--color-text-primary)] font-medium">{set.targetWeight}</span> ×
 				{/if}
 				<span class="text-[var(--color-text-muted)]">{repRange} reps</span>
 			</div>
