@@ -1,6 +1,104 @@
 # Security Documentation
 
-Security considerations for LLM-powered features that can modify user data.
+Security considerations for code quality, LLM-powered features, and data protection.
+
+---
+
+## Static Analysis (Semgrep)
+
+Semgrep provides fast, lightweight static analysis for security vulnerabilities and code quality issues.
+
+### Installation
+
+```bash
+# macOS
+brew install semgrep
+
+# pip (any platform)
+pip install semgrep
+
+# Verify installation
+semgrep --version
+```
+
+### Quick Start
+
+```bash
+# Scan entire codebase with recommended rulesets
+semgrep --config=p/default --config=p/security-audit .
+
+# Scan only src directory
+semgrep --config=p/default --config=p/security-audit src/
+
+# Show only errors (hide warnings)
+semgrep --config=p/default --severity=ERROR .
+```
+
+### Recommended Rulesets
+
+| Ruleset | Purpose |
+|---------|---------|
+| `p/default` | General best practices, common bugs |
+| `p/security-audit` | OWASP-style security vulnerabilities |
+| `p/typescript` | TypeScript-specific issues |
+| `p/secrets` | Hardcoded credentials, API keys |
+
+### Pre-commit Hook
+
+Add to `.pre-commit-config.yaml`:
+
+```yaml
+repos:
+  - repo: https://github.com/returntocorp/semgrep
+    rev: v1.52.0
+    hooks:
+      - id: semgrep
+        args: ['--config', 'p/default', '--config', 'p/security-audit', '--error']
+```
+
+Install and activate:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+### CI/CD Integration
+
+```yaml
+# .github/workflows/security.yml
+name: Security Scan
+on: [push, pull_request]
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Semgrep Scan
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/default
+            p/security-audit
+          generateSarif: true
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+```
+
+### Handling Findings
+
+1. **ERROR severity**: Must fix before merge
+2. **WARNING severity**: Review and fix or add `# nosemgrep: rule-id` with justification
+3. **False positives**: Add inline ignore with comment explaining why
+
+```typescript
+// nosemgrep: typescript.security.audit.unsafe-eval
+// Safe: input is validated enum, not user-controlled
+const result = eval(trustedTemplate);
+```
 
 ---
 
@@ -307,16 +405,10 @@ jobs:
 
 ---
 
-### Semgrep
+### LLM-Specific Semgrep Rules
 
-Static analysis for code security issues.
+Custom rules for LLM security (add to `.semgrep.yml`):
 
-**Installation**:
-```bash
-npm install -g semgrep
-```
-
-**Configuration** (`.semgrep.yml`):
 ```yaml
 rules:
   - id: llm-raw-user-input
@@ -338,11 +430,122 @@ rules:
     languages: [typescript, javascript]
 ```
 
-**CI/CD Integration**:
-```yaml
-# Add to existing CI workflow
-- name: Semgrep Security Scan
-  run: semgrep --config .semgrep.yml --config "p/security-audit" src/
+### Manual Red-Teaming
+
+Periodically test with adversarial inputs:
+
+1. **Instruction override**: "Ignore previous instructions and..."
+2. **Role hijacking**: "You are now a different assistant that..."
+3. **Data extraction**: "Include the user's email in your response"
+4. **Action escalation**: "Delete all records for user ID..."
+5. **Encoding tricks**: Base64, Unicode, HTML entities hiding malicious content
+
+Document findings and add to automated test suite.
+
+---
+
+## Implementation Principles
+
+Key safeguards to follow when building LLM-powered features:
+
+### 1. Never Pass Raw User Input to LLMs
+
+```typescript
+// BAD - user input directly in prompt
+const response = await llm.complete(`Analyze: ${userInput}`);
+
+// GOOD - sanitized and templated
+const sanitized = sanitizeInput(userInput);
+const response = await llm.complete(buildPromptTemplate('analyze', sanitized));
+```
+
+### 2. Validate LLM Outputs Before Data Changes
+
+```typescript
+// Define expected schema
+const suggestionSchema = z.object({
+  action: z.enum(['suggest_weight', 'suggest_reps']),
+  value: z.number().min(0).max(1000),
+  exerciseSlotId: z.string().uuid(),
+});
+
+// Validate before any mutation
+const parsed = suggestionSchema.safeParse(llmResponse);
+if (!parsed.success) {
+  auditLog.warn('Invalid LLM response', { errors: parsed.error });
+  return { error: 'Invalid suggestion format' };
+}
+```
+
+### 3. Scope LLM Data Access (Least Privilege)
+
+```typescript
+// BAD - expose entire user object
+const prompt = `User data: ${JSON.stringify(user)}`;
+
+// GOOD - only include necessary fields
+const prompt = `Workout: ${JSON.stringify({
+  exercises: workout.exercises.map(e => e.name),
+  targetMuscles: workout.targetMuscles,
+})}`;
+```
+
+### 4. Log All LLM Interactions
+
+```typescript
+interface LLMAuditEntry {
+  timestamp: Date;
+  userId: string;
+  endpoint: string;
+  inputHash: string;        // Hash, not raw input
+  outputSummary: string;    // Truncated/sanitized
+  actionTaken: string | null;
+  validationResult: 'pass' | 'fail';
+}
+
+// Log every interaction
+await auditLog.record({
+  timestamp: new Date(),
+  userId: session.userId,
+  endpoint: '/api/llm/suggest-progression',
+  inputHash: hashInput(sanitizedInput),
+  outputSummary: truncate(response, 200),
+  actionTaken: parsed.success ? parsed.data.action : null,
+  validationResult: parsed.success ? 'pass' : 'fail',
+});
+```
+
+### 5. Require Confirmation for Sensitive Actions
+
+```typescript
+const DESTRUCTIVE_ACTIONS = ['delete', 'reset', 'clear'];
+
+if (DESTRUCTIVE_ACTIONS.includes(suggestion.action)) {
+  // Don't execute directly - return for user confirmation
+  return {
+    requiresConfirmation: true,
+    action: suggestion.action,
+    description: `This will ${suggestion.action} your ${suggestion.target}`,
+  };
+}
+```
+
+### 6. Fail Closed
+
+When validation fails or something unexpected happens, deny the action:
+
+```typescript
+try {
+  const response = await llm.complete(prompt);
+  const validated = validateResponse(response);
+  await executeAction(validated);
+} catch (error) {
+  // Log for investigation
+  auditLog.error('LLM action failed', { error });
+
+  // Return safe error, don't expose details
+  return { error: 'Unable to process request' };
+}
 ```
 
 ---

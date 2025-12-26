@@ -63,11 +63,20 @@ Quick reference for what's done vs what's remaining.
 
 LLM integrations that can modify user data require specific security measures.
 
-### Vulnerability Scanning
-- [ ] Integrate Garak (NVIDIA's LLM vulnerability scanner) for automated testing
+### Static Analysis (Semgrep)
+- [ ] Install Semgrep locally (`pip install semgrep` or `brew install semgrep`)
+- [ ] Run baseline scan: `semgrep --config=p/default --config=p/security-audit .`
+- [ ] Add pre-commit hook for automatic scans on staged changes
+- [ ] Integrate into CI pipeline to block PRs with high-severity findings
+- [ ] Add LLM-specific custom rules (raw user input in prompts, unvalidated outputs)
+- [ ] Configure dependency vulnerability scanning (npm audit in CI)
+
+### LLM Vulnerability Scanning (Garak)
+- [ ] Install Garak: `pip install garak`
 - [ ] Test for prompt injection attacks (direct and indirect)
 - [ ] Test for jailbreak attempts and guardrail bypasses
-- [ ] Add Garak to CI/CD pipeline for regression testing
+- [ ] Add Garak to CI/CD pipeline for regression testing on LLM code changes
+- [ ] Schedule weekly automated scans
 
 ### Input Validation Layer
 - [ ] Create input sanitization middleware for all LLM-bound requests
@@ -76,16 +85,11 @@ LLM integrations that can modify user data require specific security measures.
 - [ ] Validate input length and character restrictions
 
 ### Output Validation Layer
-- [ ] Schema validation for all LLM responses before data mutations
+- [ ] Schema validation (Zod) for all LLM responses before data mutations
 - [ ] Allowlist of permitted actions/operations
 - [ ] Reject responses that don't match expected structure
+- [ ] User confirmation step for destructive or sensitive data changes
 - [ ] Log and alert on validation failures
-
-### Static Analysis & CI/CD
-- [ ] Set up Semgrep with LLM-specific rulesets
-- [ ] Add security scanning to PR checks
-- [ ] Configure dependency vulnerability scanning (npm audit, Snyk)
-- [ ] Implement pre-commit hooks for security linting
 
 ### Rate Limiting & Monitoring
 - [ ] Rate limiting on LLM-powered endpoints (per-user, per-IP)
