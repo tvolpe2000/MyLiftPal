@@ -120,6 +120,32 @@ LLM integrations that can modify user data require specific security measures.
 
 ---
 
+## Known Issues / Technical Debt
+
+### Accessibility Warnings (a11y)
+
+Non-blocking warnings from `npm run check`. Fix when time permits:
+
+| File | Line | Issue |
+|------|------|-------|
+| `ScrollWheelPicker.svelte` | 81 | Label not associated with control |
+| `TemplatePicker.svelte` | 126 | Toggle button missing `aria-label` |
+| `SetInputModal.svelte` | 223 | Label not associated with control (Weight) |
+| `SetInputModal.svelte` | 293 | Label not associated with control (Reps) |
+| `SetInputModal.svelte` | 344 | Label not associated with control (RIR) |
+
+**Fix approach**:
+- For labels: Add `id` to input and `for` attribute to label, or wrap input inside label
+- For toggle button: Add `aria-label="Toggle include exercises"`
+
+### Dependency Vulnerabilities
+
+From `npm audit` (4 low severity):
+- `cookie` package vulnerability (transitive dep of @sveltejs/kit)
+- Cannot fix without breaking SvelteKit; waiting for upstream update
+
+---
+
 ## Recently Completed
 
 | Date | Feature |
