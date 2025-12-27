@@ -15,19 +15,21 @@ import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-// Load .env manually to avoid dotenv noise
+// Load .env files manually to avoid dotenv noise
 const __filename = fileURLToPath(import.meta.url);
-const rootDir = resolve(dirname(__filename), '../..');
-const envPath = resolve(rootDir, '.env');
+const envFiles = ['.env.local', '.env'];
 
-if (existsSync(envPath)) {
-  const envContent = readFileSync(envPath, 'utf-8');
-  envContent.split('\n').forEach(line => {
-    const match = line.match(/^([^#=]+)=(.*)$/);
-    if (match && !process.env[match[1].trim()]) {
-      process.env[match[1].trim()] = match[2].trim();
-    }
-  });
+for (const file of envFiles) {
+  const envPath = resolve(process.cwd(), file);
+  if (existsSync(envPath)) {
+    const envContent = readFileSync(envPath, 'utf-8');
+    envContent.split('\n').forEach(line => {
+      const match = line.match(/^([^#=]+)=(.*)$/);
+      if (match && !process.env[match[1].trim()]) {
+        process.env[match[1].trim()] = match[2].trim();
+      }
+    });
+  }
 }
 
 const __dirname = dirname(__filename);
