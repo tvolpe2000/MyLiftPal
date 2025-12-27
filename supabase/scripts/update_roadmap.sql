@@ -1,5 +1,5 @@
 -- Update roadmap to reflect current priorities
--- Run this in Supabase SQL Editor
+-- Auto-runs on commit via pre-commit hook
 -- Only includes user-facing features
 
 -- Clear existing roadmap items
