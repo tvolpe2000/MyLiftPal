@@ -3,7 +3,8 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { supabase } from '$lib/db/supabase';
 	import AppShell from '$lib/components/AppShell.svelte';
-	import { Plus, Calendar, Dumbbell, ChevronRight, Play, Pause, CheckCircle, BarChart3, Clock, Trash2 } from 'lucide-svelte';
+	import { Plus, Calendar, Dumbbell, Play, Pause, CheckCircle, BarChart3, Clock, Trash2 } from 'lucide-svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { calculateWeeklyVolume, getVolumeBarColor } from '$lib/utils/volume';
 	import type { MuscleVolume, MuscleGroupData, ExerciseForVolume } from '$lib/utils/volume';
 	import { calculateDayTime } from '$lib/utils/time';
@@ -44,7 +45,12 @@
 	let muscleGroups = $state<MuscleGroupData[]>([]);
 	let loading = $state(true);
 	let error = $state('');
-	let deletingBlockId = $state<string | null>(null);
+	let deleteModal = $state<{ open: boolean; blockId: string; blockName: string; loading: boolean }>({
+		open: false,
+		blockId: '',
+		blockName: '',
+		loading: false
+	});
 
 	$effect(() => {
 		if (auth.initialized && !auth.isAuthenticated) {
@@ -194,28 +200,32 @@
 		});
 	}
 
-	async function deleteBlock(blockId: string, blockName: string, event: MouseEvent) {
+	function openDeleteModal(blockId: string, blockName: string, event: MouseEvent) {
 		event.preventDefault();
 		event.stopPropagation();
+		deleteModal = { open: true, blockId, blockName, loading: false };
+	}
 
-		const confirmed = confirm(`Delete "${blockName}"?\n\nThis will permanently remove the training block and all its workout data.`);
-		if (!confirmed) return;
+	function closeDeleteModal() {
+		deleteModal = { open: false, blockId: '', blockName: '', loading: false };
+	}
 
-		deletingBlockId = blockId;
+	async function confirmDelete() {
+		deleteModal.loading = true;
 
 		const { error: deleteError } = await supabase
 			.from('training_blocks')
 			.delete()
-			.eq('id', blockId);
+			.eq('id', deleteModal.blockId);
 
 		if (deleteError) {
 			console.error('Error deleting block:', deleteError);
 			error = 'Failed to delete training block';
 		} else {
-			blocks = blocks.filter((b) => b.id !== blockId);
+			blocks = blocks.filter((b) => b.id !== deleteModal.blockId);
 		}
 
-		deletingBlockId = null;
+		closeDeleteModal();
 	}
 </script>
 
@@ -270,27 +280,36 @@
 							{@const lowCount = volumes.filter((v: MuscleVolume) => v.status === 'low').length}
 							{@const goodCount = volumes.filter((v: MuscleVolume) => v.status === 'good').length}
 							{@const totalTime = getBlockTime(block)}
+							<div class="relative">
+							<!-- Delete Button - Top Right -->
+							<button
+								type="button"
+								onclick={(e) => openDeleteModal(block.id, block.name, e)}
+								class="absolute top-3 right-3 z-10 p-2 rounded-lg text-[var(--color-text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
+								title="Delete training block"
+							>
+								<Trash2 size={18} />
+							</button>
+
 							<a
 								href="/blocks/{block.id}"
-								class="block bg-[var(--color-bg-secondary)] rounded-xl p-5 hover:bg-[var(--color-bg-tertiary)] transition-colors"
+								class="block bg-[var(--color-bg-secondary)] rounded-xl p-5 pr-14 hover:bg-[var(--color-bg-tertiary)] transition-colors"
 							>
-								<div class="flex items-center justify-between">
-									<div class="flex-1">
-										<div class="flex items-center gap-3 mb-2">
-											<h3 class="text-lg font-semibold text-[var(--color-text-primary)]">
-												{block.name}
-											</h3>
-											<span
-												class="flex items-center gap-1 text-xs font-medium {getStatusColor(block.status)} capitalize"
-											>
-												<StatusIcon size={14} />
-												{block.status}
-											</span>
-										</div>
+								<div class="flex items-center gap-3 mb-2">
+									<h3 class="text-lg font-semibold text-[var(--color-text-primary)]">
+										{block.name}
+									</h3>
+									<span
+										class="flex items-center gap-1 text-xs font-medium {getStatusColor(block.status)} capitalize"
+									>
+										<StatusIcon size={14} />
+										{block.status}
+									</span>
+								</div>
 
 										<div class="flex flex-wrap items-center gap-4 text-sm text-[var(--color-text-secondary)]">
-											<div class="flex items-center gap-1.5">
-												<Calendar size={14} class="text-[var(--color-text-muted)]" />
+								<div class="flex items-center gap-1.5">
+									<Calendar size={14} class="text-[var(--color-text-muted)]" />
 												<span>Week {block.current_week} of {block.total_weeks}</span>
 											</div>
 											<div class="flex items-center gap-1.5">
@@ -350,28 +369,10 @@
 														</span>
 													{/if}
 												</div>
-											</div>
-										{/if}
-									</div>
-
-									<div class="flex items-center gap-2 ml-4 flex-shrink-0">
-									<button
-										type="button"
-										onclick={(e) => deleteBlock(block.id, block.name, e)}
-										disabled={deletingBlockId === block.id}
-										class="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-										title="Delete training block"
-									>
-										{#if deletingBlockId === block.id}
-											<div class="w-5 h-5 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div>
-										{:else}
-											<Trash2 size={18} />
-										{/if}
-									</button>
-									<ChevronRight size={20} class="text-[var(--color-text-muted)]" />
 								</div>
-								</div>
+							{/if}
 							</a>
+						</div>
 						{/each}
 					</div>
 				{/if}
@@ -379,3 +380,16 @@
 		</div>
 	</AppShell>
 {/if}
+
+<!-- Delete Confirmation Modal -->
+<ConfirmModal
+	open={deleteModal.open}
+	title="Delete Training Block"
+	message="This will permanently remove &quot;{deleteModal.blockName}&quot; and all its workout data including logged sets."
+	confirmText="Delete"
+	cancelText="Cancel"
+	variant="danger"
+	loading={deleteModal.loading}
+	onconfirm={confirmDelete}
+	oncancel={closeDeleteModal}
+/>

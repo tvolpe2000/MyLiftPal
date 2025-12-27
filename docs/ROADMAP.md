@@ -12,6 +12,7 @@ Quick reference for what's done vs what's remaining.
 - [x] Basic workout logging (weight, reps, RIR)
 - [x] Program templates (PPL, Upper/Lower, Full Body, etc.)
 - [x] Smart auto-fill exercises
+- [x] Delete training blocks (with confirmation modal)
 
 ---
 
@@ -217,6 +218,7 @@ From `npm audit` (4 low severity):
 
 | Date | Feature |
 |------|---------|
+| 2025-12-27 | Delete training blocks (trash icon with confirmation modal) |
 | 2025-12-27 | Edit completed workouts (view/edit past sessions from Recent Activity) |
 | 2025-12-26 | Time estimation (wizard Step 3 + blocks list) |
 | 2025-12-26 | ExerciseCard muscle display (primary/secondary muscles) |
@@ -234,4 +236,4 @@ From `npm audit` (4 low severity):
 
 ---
 
-*Last updated: 2025-12-26*
+*Last updated: 2025-12-27*
