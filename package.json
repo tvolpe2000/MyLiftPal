@@ -11,7 +11,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
-		"lint": "prettier --check . && eslint ."
+		"lint": "prettier --check . && eslint .",
+		"db:run": "node supabase/scripts/run-sql.js"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.4.0",
@@ -40,6 +41,7 @@
 		"@supabase/supabase-js": "^2.89.0",
 		"@vite-pwa/sveltekit": "^1.1.0",
 		"idb": "^8.0.3",
-		"lucide-svelte": "^0.562.0"
+		"lucide-svelte": "^0.562.0",
+		"pg": "^8.16.3"
 	}
 }
