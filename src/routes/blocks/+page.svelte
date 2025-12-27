@@ -3,7 +3,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { supabase } from '$lib/db/supabase';
 	import AppShell from '$lib/components/AppShell.svelte';
-	import { Plus, Calendar, Dumbbell, ChevronRight, Play, Pause, CheckCircle, BarChart3, Clock } from 'lucide-svelte';
+	import { Plus, Calendar, Dumbbell, ChevronRight, Play, Pause, CheckCircle, BarChart3, Clock, Trash2 } from 'lucide-svelte';
 	import { calculateWeeklyVolume, getVolumeBarColor } from '$lib/utils/volume';
 	import type { MuscleVolume, MuscleGroupData, ExerciseForVolume } from '$lib/utils/volume';
 	import { calculateDayTime } from '$lib/utils/time';
@@ -44,6 +44,7 @@
 	let muscleGroups = $state<MuscleGroupData[]>([]);
 	let loading = $state(true);
 	let error = $state('');
+	let deletingBlockId = $state<string | null>(null);
 
 	$effect(() => {
 		if (auth.initialized && !auth.isAuthenticated) {
@@ -192,6 +193,30 @@
 			year: 'numeric'
 		});
 	}
+
+	async function deleteBlock(blockId: string, blockName: string, event: MouseEvent) {
+		event.preventDefault();
+		event.stopPropagation();
+
+		const confirmed = confirm(`Delete "${blockName}"?\n\nThis will permanently remove the training block and all its workout data.`);
+		if (!confirmed) return;
+
+		deletingBlockId = blockId;
+
+		const { error: deleteError } = await supabase
+			.from('training_blocks')
+			.delete()
+			.eq('id', blockId);
+
+		if (deleteError) {
+			console.error('Error deleting block:', deleteError);
+			error = 'Failed to delete training block';
+		} else {
+			blocks = blocks.filter((b) => b.id !== blockId);
+		}
+
+		deletingBlockId = null;
+	}
 </script>
 
 {#if auth.isAuthenticated}
@@ -329,7 +354,22 @@
 										{/if}
 									</div>
 
-									<ChevronRight size={20} class="text-[var(--color-text-muted)] ml-4 flex-shrink-0" />
+									<div class="flex items-center gap-2 ml-4 flex-shrink-0">
+									<button
+										type="button"
+										onclick={(e) => deleteBlock(block.id, block.name, e)}
+										disabled={deletingBlockId === block.id}
+										class="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+										title="Delete training block"
+									>
+										{#if deletingBlockId === block.id}
+											<div class="w-5 h-5 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div>
+										{:else}
+											<Trash2 size={18} />
+										{/if}
+									</button>
+									<ChevronRight size={20} class="text-[var(--color-text-muted)]" />
+								</div>
 								</div>
 							</a>
 						{/each}
