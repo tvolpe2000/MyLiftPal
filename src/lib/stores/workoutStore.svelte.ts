@@ -23,7 +23,9 @@ function createWorkoutStore() {
 		loading: true,
 		error: '',
 		isSaving: false,
-		activeSetInput: null
+		activeSetInput: null,
+		isEditMode: false,
+		originalSession: null
 	});
 
 	// Derived values
@@ -104,6 +106,80 @@ function createWorkoutStore() {
 		} catch (error) {
 			console.error('Error loading workout:', error);
 			state.error = error instanceof Error ? error.message : 'Failed to load workout';
+		} finally {
+			state.loading = false;
+		}
+	}
+
+	async function loadPastSession(sessionId: string) {
+		if (!auth.user) return;
+
+		state.loading = true;
+		state.error = '';
+		state.isEditMode = true;
+
+		try {
+			// Fetch session with related data
+			const { data: sessionData, error: sessionError } = await supabase
+				.from('workout_sessions')
+				.select(`
+					*,
+					logged_sets (*)
+				`)
+				.eq('id', sessionId)
+				.eq('user_id', auth.user.id)
+				.single();
+
+			if (sessionError) throw sessionError;
+			if (!sessionData) throw new Error('Session not found');
+
+			const session = sessionData as unknown as WorkoutSession & { logged_sets: LoggedSet[] };
+			state.session = session;
+			state.originalSession = { ...session } as WorkoutSession;
+
+			// Fetch training block
+			const { data: blockData, error: blockError } = await supabase
+				.from('training_blocks')
+				.select(`
+					id, name, total_weeks, current_week, current_day, status,
+					workout_days (id, day_number, name, target_muscles, time_budget_minutes)
+				`)
+				.eq('id', session.training_block_id)
+				.single();
+
+			if (blockError) throw blockError;
+			if (!blockData) throw new Error('Training block not found');
+
+			const block = blockData as unknown as TrainingBlockWithDays;
+			state.trainingBlock = block;
+
+			// Find the workout day for this session
+			const workoutDay = block.workout_days?.find(d => d.id === session.workout_day_id);
+			if (!workoutDay) throw new Error('Workout day not found');
+
+			// Fetch exercise slots
+			const { data: slotsData, error: slotsError } = await supabase
+				.from('exercise_slots')
+				.select(`*, exercise:exercises (*)`)
+				.eq('workout_day_id', session.workout_day_id)
+				.order('slot_order');
+
+			if (slotsError) throw slotsError;
+
+			const slots = (slotsData || []) as unknown as ExerciseSlotWithExercise[];
+
+			state.currentWorkoutDay = {
+				...workoutDay,
+				exercise_slots: slots
+			} as WorkoutDayWithSlots;
+
+			// Build exercise state using the SESSION's week_number (not block's current_week)
+			await buildExerciseState(slots, session.week_number);
+
+		} catch (error) {
+			console.error('Error loading past session:', error);
+			state.error = error instanceof Error ? error.message : 'Failed to load session';
+			state.isEditMode = false;
 		} finally {
 			state.loading = false;
 		}
@@ -456,6 +532,36 @@ function createWorkoutStore() {
 		}
 	}
 
+	async function uncompleteWorkout() {
+		if (!state.session) return false;
+
+		state.isSaving = true;
+
+		try {
+			const { error } = await supabase
+				.from('workout_sessions')
+				.update({
+					status: 'in_progress',
+					completed_at: null
+				} as never)
+				.eq('id', state.session.id);
+
+			if (error) throw error;
+
+			// Update local state
+			state.session = { ...state.session, status: 'in_progress', completed_at: null } as WorkoutSession;
+			state.isEditMode = false;
+
+			return true;
+		} catch (error) {
+			console.error('Error uncompleting workout:', error);
+			state.error = 'Failed to resume workout';
+			return false;
+		} finally {
+			state.isSaving = false;
+		}
+	}
+
 	async function advanceDay() {
 		if (!state.trainingBlock) return;
 
@@ -505,6 +611,8 @@ function createWorkoutStore() {
 		state.error = '';
 		state.isSaving = false;
 		state.activeSetInput = null;
+		state.isEditMode = false;
+		state.originalSession = null;
 	}
 
 	return {
@@ -533,6 +641,12 @@ function createWorkoutStore() {
 		get activeSetInput() {
 			return state.activeSetInput;
 		},
+		get isEditMode() {
+			return state.isEditMode;
+		},
+		get originalSession() {
+			return state.originalSession;
+		},
 
 		// Derived getters
 		get totalSets() {
@@ -550,12 +664,14 @@ function createWorkoutStore() {
 
 		// Methods
 		loadWorkout,
+		loadPastSession,
 		openSetInput,
 		closeSetInput,
 		toggleExerciseExpanded,
 		quickLogSet,
 		logSet,
 		completeWorkout,
+		uncompleteWorkout,
 		reset
 	};
 }

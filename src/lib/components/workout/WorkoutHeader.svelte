@@ -60,7 +60,10 @@
 				{workout.currentWorkoutDay?.name || 'Workout'}
 			</h1>
 			<p class="text-sm text-[var(--color-text-secondary)]">
-				{workout.trainingBlock?.name} - Week {workout.trainingBlock?.current_week}
+				{workout.trainingBlock?.name} - Week {workout.session?.week_number ?? workout.trainingBlock?.current_week}
+				{#if workout.isEditMode}
+					<span class="text-amber-400 ml-1">(Editing)</span>
+				{/if}
 			</p>
 		</div>
 	</div>

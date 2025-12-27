@@ -4,7 +4,7 @@
 	import { supabase } from '$lib/db/supabase';
 	import AppShell from '$lib/components/AppShell.svelte';
 	import DownloadButton from '$lib/components/offline/DownloadButton.svelte';
-	import { Play, Plus, Dumbbell, Clock, TrendingUp, Calendar } from 'lucide-svelte';
+	import { Play, Plus, Dumbbell, Clock, TrendingUp, Calendar, ChevronRight } from 'lucide-svelte';
 	import type { TrainingBlockStatus } from '$lib/types/index';
 
 	interface ActiveBlock {
@@ -22,7 +22,7 @@
 		completed_at: string;
 		duration_minutes: number | null;
 		workout_day: { name: string };
-		training_block: { name: string };
+		training_block: { id: string; name: string };
 	}
 
 	let activeBlock = $state<ActiveBlock | null>(null);
@@ -70,7 +70,7 @@
 				.select(`
 					id, completed_at, duration_minutes,
 					workout_day:workout_days (name),
-					training_block:training_blocks (name)
+					training_block:training_blocks (id, name)
 				`)
 				.eq('user_id', auth.user.id)
 				.eq('status', 'completed')
@@ -221,9 +221,12 @@
 				{#if recentSessions.length > 0}
 					<div class="bg-[var(--color-bg-secondary)] rounded-xl p-6">
 						<h3 class="font-semibold text-[var(--color-text-primary)] mb-4">Recent Activity</h3>
-						<div class="space-y-3">
+						<div class="space-y-1">
 							{#each recentSessions as session}
-								<div class="flex items-center justify-between py-2 border-b border-[var(--color-border)] last:border-0">
+								<a
+									href="/blocks/{session.training_block?.id}?session={session.id}"
+									class="flex items-center justify-between py-3 px-2 -mx-2 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors cursor-pointer group"
+								>
 									<div>
 										<div class="font-medium text-[var(--color-text-primary)]">
 											{session.workout_day?.name || 'Workout'}
@@ -232,18 +235,21 @@
 											{session.training_block?.name}
 										</div>
 									</div>
-									<div class="text-right">
-										<div class="text-sm text-[var(--color-text-secondary)]">
-											{formatDate(session.completed_at)}
-										</div>
-										{#if session.duration_minutes}
-											<div class="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
-												<Clock size={12} />
-												{session.duration_minutes} min
+									<div class="flex items-center gap-3">
+										<div class="text-right">
+											<div class="text-sm text-[var(--color-text-secondary)]">
+												{formatDate(session.completed_at)}
 											</div>
-										{/if}
+											{#if session.duration_minutes}
+												<div class="flex items-center justify-end gap-1 text-xs text-[var(--color-text-muted)]">
+													<Clock size={12} />
+													{session.duration_minutes} min
+												</div>
+											{/if}
+										</div>
+										<ChevronRight size={18} class="text-[var(--color-text-muted)] group-hover:text-[var(--color-accent)] transition-colors" />
 									</div>
-								</div>
+								</a>
 							{/each}
 						</div>
 					</div>

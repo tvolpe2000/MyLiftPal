@@ -72,6 +72,8 @@ export interface WorkoutState {
 	error: string;
 	isSaving: boolean;
 	activeSetInput: ActiveSetInput | null;
+	isEditMode: boolean; // true when editing a past completed session
+	originalSession: WorkoutSession | null; // original session data for uncomplete feature
 }
 
 // Set input data from modal
