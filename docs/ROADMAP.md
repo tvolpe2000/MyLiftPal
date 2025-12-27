@@ -101,6 +101,7 @@ LLM integrations that can modify user data require specific security measures.
 
 ## Pre-Launch Requirements
 
+- [ ] Fix screen lock causing page reload (see Known Issues)
 - [ ] Test data seeding (demo account with workout history for testing)
 - [ ] Beta testing with real users (currently: few testers)
 - [ ] Bug fixes from beta feedback
@@ -121,6 +122,25 @@ LLM integrations that can modify user data require specific security measures.
 ---
 
 ## Known Issues / Technical Debt
+
+### Screen Lock Causes Page Reload
+
+**Reported**: User locks phone during workout, page reloads and loses state when unlocked.
+
+**Cause**: iOS Safari and Android Chrome discard background tabs to save memory. When the user returns, the page must reload from scratch.
+
+**Solution approach**:
+1. Use Page Visibility API (`visibilitychange` event) to detect when page is hidden
+2. Save active workout state to IndexedDB before page is hidden
+3. On page load, check for saved workout state and restore it
+4. Consider Wake Lock API to prevent screen sleep during active workout (optional)
+
+**Files to modify**:
+- `src/lib/stores/workoutStore.svelte.ts` - Add state persistence methods
+- `src/lib/db/indexedDB.ts` - Add workout state storage
+- `src/routes/blocks/[id]/+page.svelte` - Add visibility change listener
+
+---
 
 ### Accessibility Warnings (a11y)
 
