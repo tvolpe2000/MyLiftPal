@@ -102,7 +102,7 @@ LLM integrations that can modify user data require specific security measures.
 ## Pre-Launch Requirements
 
 - [ ] Fix screen lock causing page reload (see Known Issues)
-- [ ] Edit completed workouts (add missing sets, fix mistakes)
+- [x] Edit completed workouts (add missing sets, fix mistakes)
 - [ ] Test data seeding (demo account with workout history for testing)
 - [ ] Beta testing with real users (currently: few testers)
 - [ ] Bug fixes from beta feedback
@@ -170,30 +170,6 @@ LLM integrations that can modify user data require specific security measures.
 
 ## Known Issues / Technical Debt
 
-### Edit Completed Workouts
-
-**Reported**: Users need to go back into a completed workout to add missing exercises or fix logged sets.
-
-**Use cases**:
-- Forgot to log some sets before completing
-- Made a typo in weight/reps
-- Completed workout early by accident
-- Want to add notes after the fact
-
-**Solution approach**:
-1. Add "Workout History" view showing past sessions
-2. Allow tapping a past session to reopen it in edit mode
-3. Reuse existing SetInputModal for editing sets
-4. Add ability to "uncomplete" a workout to continue it
-5. Show visual indicator that session is being edited (not live)
-
-**Files to modify**:
-- `src/routes/blocks/[id]/+page.svelte` - Add edit mode, history access
-- `src/lib/stores/workoutStore.svelte.ts` - Support loading past sessions
-- New: `src/routes/blocks/[id]/history/+page.svelte` - Past sessions list
-
----
-
 ### Screen Lock Causes Page Reload
 
 **Reported**: User locks phone during workout, page reloads and loses state when unlocked.
@@ -241,6 +217,7 @@ From `npm audit` (4 low severity):
 
 | Date | Feature |
 |------|---------|
+| 2025-12-27 | Edit completed workouts (view/edit past sessions from Recent Activity) |
 | 2025-12-26 | Time estimation (wizard Step 3 + blocks list) |
 | 2025-12-26 | ExerciseCard muscle display (primary/secondary muscles) |
 | 2025-12-26 | Scroll wheel picker + global workout settings |
