@@ -13,7 +13,7 @@ INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
 (
   'Swap Exercises',
   'Quickly swap an exercise during your workout when equipment is busy',
-  'planned',
+  'in_progress',
   1
 ),
 (
