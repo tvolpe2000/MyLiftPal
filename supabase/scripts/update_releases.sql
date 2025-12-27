@@ -1,0 +1,71 @@
+-- Update app releases
+-- Auto-runs on commit via pre-commit hook
+-- Add new releases here when deploying new versions
+
+-- Note: This uses UPSERT to add/update releases without deleting history
+-- To completely refresh, uncomment the DELETE line below:
+-- DELETE FROM app_releases;
+
+-- ============================================================================
+-- RELEASES (Add new versions at the top)
+-- ============================================================================
+
+INSERT INTO app_releases (version, title, released_at, highlights, changes) VALUES
+(
+  '1.2.1',
+  'Quality of Life',
+  '2025-12-27T22:00:00Z',
+  ARRAY['In-App Roadmap', 'Welcome Fix'],
+  ARRAY[
+    'Added in-app changelog and roadmap page',
+    'Fixed welcome message spacing',
+    'Reorganized roadmap priorities for launch'
+  ]
+),
+(
+  '1.2.0',
+  'Polish & Management',
+  '2025-12-27T00:00:00Z',
+  ARRAY['Edit Past Workouts', 'Delete Blocks', 'Offline Mode'],
+  ARRAY[
+    'Edit completed workout sessions from Recent Activity',
+    'Delete training blocks with confirmation modal',
+    'PWA offline support with sync queue',
+    'Download workouts for offline use'
+  ]
+),
+(
+  '1.1.0',
+  'Intelligence Update',
+  '2025-12-26T00:00:00Z',
+  ARRAY['Volume Tracking', 'Smart Suggestions', 'Time Estimates'],
+  ARRAY[
+    'Volume calculation engine with muscle group tracking',
+    'Auto-suggest weight and reps based on previous sessions',
+    'Workout time estimation per week',
+    'Scroll wheel picker for easier input',
+    'Previous session display during workouts'
+  ]
+),
+(
+  '1.0.0',
+  'Initial Release',
+  '2025-12-25T00:00:00Z',
+  ARRAY['Training Blocks', 'Exercise Library', 'Workout Logging'],
+  ARRAY[
+    'User authentication (login, signup, forgot password)',
+    'Training block creation wizard with templates',
+    'Exercise library with search and muscle filtering',
+    'Basic workout logging (weight, reps, RIR)'
+  ]
+)
+ON CONFLICT (version) DO UPDATE SET
+  title = EXCLUDED.title,
+  released_at = EXCLUDED.released_at,
+  highlights = EXCLUDED.highlights,
+  changes = EXCLUDED.changes;
+
+-- Verify
+SELECT version, title, released_at::date as date, array_length(highlights, 1) as highlights
+FROM app_releases
+ORDER BY released_at DESC;

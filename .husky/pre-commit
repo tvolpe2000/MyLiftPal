@@ -1,5 +1,6 @@
-# Check if any SQL files in supabase/scripts/ are staged
-STAGED_SQL=$(git diff --cached --name-only --diff-filter=ACM | grep "^supabase/scripts/.*\.sql$" || true)
+# Check if any update_*.sql files in supabase/scripts/ are staged
+# Only these files auto-sync to database on commit
+STAGED_SQL=$(git diff --cached --name-only --diff-filter=ACM | grep "^supabase/scripts/update_.*\.sql$" || true)
 
 if [ -n "$STAGED_SQL" ]; then
   echo "📄 Detected staged SQL scripts - running against database..."
