@@ -112,7 +112,7 @@ LLM integrations that can modify user data require specific security measures.
 
 ## Backlog / Nice-to-Have
 
-- [ ] In-app changelog & roadmap (see details below)
+- [x] In-app changelog & roadmap (see details below) ✅
 - [ ] Duplicate training block
 - [ ] Export data (CSV/JSON)
 - [ ] Exercise video links
@@ -218,6 +218,7 @@ From `npm audit` (4 low severity):
 
 | Date | Feature |
 |------|---------|
+| 2025-12-27 | In-app changelog & roadmap page with "What's New" banner |
 | 2025-12-27 | Delete training blocks (trash icon with confirmation modal) |
 | 2025-12-27 | Edit completed workouts (view/edit past sessions from Recent Activity) |
 | 2025-12-26 | Time estimation (wizard Step 3 + blocks list) |

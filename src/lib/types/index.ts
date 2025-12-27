@@ -10,6 +10,14 @@ export type {
 	SecondaryMuscle
 } from './database';
 
+// Re-export changelog types
+export type {
+	RoadmapStatus,
+	AppRelease,
+	RoadmapItem,
+	ChangelogState
+} from './changelog';
+
 // Convenience type aliases for database rows
 import type { Database } from './database';
 

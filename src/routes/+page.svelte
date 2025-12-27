@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth.svelte';
+	import { changelog } from '$lib/stores/changelogStore.svelte';
 	import { supabase } from '$lib/db/supabase';
 	import AppShell from '$lib/components/AppShell.svelte';
 	import DownloadButton from '$lib/components/offline/DownloadButton.svelte';
+	import UpdateBanner from '$lib/components/ui/UpdateBanner.svelte';
 	import { Play, Plus, Dumbbell, Clock, TrendingUp, Calendar, ChevronRight } from 'lucide-svelte';
 	import type { TrainingBlockStatus } from '$lib/types/index';
 
@@ -38,6 +40,7 @@
 	$effect(() => {
 		if (auth.isAuthenticated && auth.user) {
 			loadHomeData();
+			changelog.initialize();
 		}
 	});
 
@@ -117,6 +120,9 @@
 					</h1>
 					<p class="text-[var(--color-text-secondary)]">Ready to crush your workout?</p>
 				</div>
+
+				<!-- What's New Banner -->
+				<UpdateBanner />
 
 				{#if loading}
 					<!-- Loading State -->
