@@ -58,6 +58,7 @@ Quick reference for what's done vs what's remaining.
 
 ### 4.2 UX Improvements
 - [ ] Swap exercises during workout (equipment busy, injury, preference)
+- [ ] Add exercises during workout (throw in extra sets, forgotten exercises)
 - [ ] Home page redesign (dynamic welcome message)
 - [ ] "Fill to Optimal" button on wizard Step 4
 - [ ] Additional themes

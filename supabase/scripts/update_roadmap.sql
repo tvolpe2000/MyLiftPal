@@ -17,22 +17,28 @@ INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
   1
 ),
 (
+  'Add Exercises Mid-Workout',
+  'Throw in extra exercises during your workout',
+  'planned',
+  2
+),
+(
   'Home Page Refresh',
   'Dynamic greetings and improved workout summary',
   'planned',
-  2
+  3
 ),
 (
   'Fill to Optimal',
   'One-tap to add exercises until all muscles hit optimal volume',
   'planned',
-  3
+  4
 ),
 (
   'Additional Themes',
   'More color schemes to personalize your experience',
   'planned',
-  4
+  5
 );
 
 -- ============================================================================
