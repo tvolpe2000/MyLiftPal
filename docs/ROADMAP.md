@@ -50,13 +50,39 @@ Quick reference for what's done vs what's remaining.
 
 ## Phase 4: Voice & Polish
 
-- [ ] Voice logging ("85 for 12" logs a set)
+- [ ] AI Voice Assistant (FAB → voice/text chat to control workouts)
+- [ ] Swap exercises during workout
 - [ ] Photo import (OCR for handwritten logs)
-- [ ] Progression reasoning display
-- [ ] Performance optimization
 - [ ] Additional themes
 - [ ] "Fill to Optimal" button on wizard Step 4 (auto-add exercises until all muscles hit green volume)
 - [ ] PWA installation prompt (custom "Install App" button)
+
+### AI Voice Assistant Details
+
+**Entry Point:** Floating Action Button (FAB) during workout
+- Tap → Voice mode (uses Browser Speech API, upgrade to Whisper if needed)
+- Long press or secondary button → Text input mode
+
+**Architecture:** Tool Use / Function Calling
+- Send transcription + workout context to LLM (Claude/GPT)
+- LLM returns structured tool call
+- App executes action and speaks/shows confirmation
+
+**Supported Actions:**
+| Action | Example Input |
+|--------|---------------|
+| Log set | "185 for 8, felt easy, 2 in the tank" |
+| Skip exercise | "Skip triceps, elbow is bothering me" |
+| Swap exercise | "Swap this for dumbbell press" |
+| Complete workout | "I'm done for today" |
+| Add exercise | "Add some calf raises, 3 sets" |
+| Undo last | "Undo that" / "Wait, that was 8 not 6" |
+
+**Technical Approach:**
+1. Browser Web Speech API for transcription (free, MVP)
+2. Whisper API upgrade path if accuracy insufficient
+3. Single LLM API call with tool definitions
+4. No custom agents or MCP required
 
 ---
 
