@@ -4,6 +4,127 @@ Chronological notes on development progress, sessions, and learnings.
 
 ---
 
+## 2025-12-27
+
+### Session: In-App Changelog & Roadmap
+
+**What was done:**
+- Created database tables for changelog system:
+  - `app_releases` - Version history with highlights and changes
+  - `app_roadmap` - Upcoming features with status badges
+  - Added `last_seen_version` to profiles for notification tracking
+- Built changelog store (`changelogStore.svelte.ts`):
+  - Fetches releases and roadmap from Supabase
+  - Compares versions to determine if banner should show
+  - Auto-marks version as seen when visiting changelog page
+- Created UpdateBanner component:
+  - "What's New" notification with sparkle icon
+  - Links to /changelog page
+  - Auto-dismisses on page visit (not manual close)
+- Built /changelog page with tabbed interface:
+  - Tab 1: Recent Updates - Version cards with highlights
+  - Tab 2: Coming Soon - Roadmap items with status badges
+  - Status colors: tracked (gray), planned (blue), in_progress (yellow)
+- Added SQL script for updating roadmap items
+
+**Technical decisions:**
+- Database tables over static JSON for easier updates without deploys
+- Type assertions used for new Supabase tables (not in generated types yet)
+- Auto-dismiss on page visit instead of explicit "mark as read" button
+- Only user-facing features in roadmap (no security patches, tech debt)
+
+**Files created:**
+- `supabase/migrations/003_changelog.sql` - Tables and seed data
+- `src/lib/types/changelog.ts` - TypeScript types
+- `src/lib/stores/changelogStore.svelte.ts` - State management
+- `src/lib/components/ui/UpdateBanner.svelte` - Notification banner
+- `src/routes/changelog/+page.svelte` - Changelog page
+- `supabase/scripts/update_roadmap.sql` - Roadmap update script
+
+**Files modified:**
+- `src/routes/+page.svelte` - Added UpdateBanner to home page
+- `src/lib/types/index.ts` - Re-export changelog types
+
+---
+
+### Session: Delete Training Blocks Fix
+
+**What was done:**
+- Fixed delete training blocks feature based on user feedback:
+  - Replaced browser `confirm()` with proper ConfirmModal component
+  - Moved trash icon from middle-right to top-right of card
+  - Removed redundant ChevronRight icon (card click navigates)
+  - Card click area excludes delete button (no accidental deletes)
+- Created reusable ConfirmModal component:
+  - Supports danger/warning/default variants
+  - Loading state for async operations
+  - Accessible with proper focus management
+
+**Technical decisions:**
+- ConfirmModal is generic and reusable for future delete operations
+- Absolute positioning for trash icon with z-index for click priority
+- Card uses `pr-14` padding-right to prevent text overlap with button
+
+**Files created:**
+- `src/lib/components/ui/ConfirmModal.svelte` - Reusable confirmation modal
+
+**Files modified:**
+- `src/routes/blocks/+page.svelte` - Delete button positioning, modal integration
+
+---
+
+### Session: AI Voice Assistant Design
+
+**What was done:**
+- Designed comprehensive AI voice assistant architecture
+- Documented tool definitions for LLM function calling:
+  - `logSet` - Log weight, reps, RIR with voice
+  - `swapExercise` - Switch to different exercise
+  - `skipExercise` - Skip current exercise
+  - `completeWorkout` - Finish session
+  - `addExercise` - Add exercise to workout
+  - `undoLast` - Undo previous action
+  - `clarify` - Ask clarifying questions
+- Defined voice recognition approach:
+  - MVP: Browser Web Speech API (free)
+  - Upgrade: Whisper API for better accuracy
+- Designed user flow with FAB entry point
+- Created context schema for LLM requests
+
+**Technical decisions:**
+- Tool Use / Function Calling architecture (not custom agents or MCP)
+- Full capability parity with manual actions
+- Real-time logging (no batch confirmation)
+- Zod validation for LLM responses before mutations
+
+**Files created:**
+- `docs/AI_ASSISTANT.md` - Full architecture and tool definitions
+
+**Files modified:**
+- `docs/ROADMAP.md` - Added AI assistant details, updated Phase 4
+
+---
+
+### Session: Documentation Updates
+
+**What was done:**
+- Updated CLAUDE.md with:
+  - New components (ConfirmModal, UpdateBanner, ScrollWheelPicker)
+  - New stores (changelogStore, offlineStore, workoutSettings)
+  - New routes (/changelog)
+  - New migrations (003_changelog.sql)
+  - Documentation references (AI_ASSISTANT.md, SECURITY.md)
+  - Changelog system description
+- Rewrote README.md with proper project description
+- Updated devlog with today's sessions
+
+**Files modified:**
+- `CLAUDE.md` - Project structure, architecture notes, documentation workflow
+- `README.md` - Complete rewrite from SvelteKit default
+- `docs/devlog.md` - Today's sessions
+
+---
+
 ## 2025-12-26
 
 ### Session: PWA Offline Mode (Phase 3)

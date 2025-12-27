@@ -116,7 +116,7 @@
 				<!-- Welcome Header -->
 				<div class="mb-2">
 					<h1 class="text-2xl font-bold text-[var(--color-text-primary)]">
-						Welcome{auth.profile?.display_name ? `, ${auth.profile.display_name}` : ''}!
+						Welcome{auth.profile?.display_name ? `, ${auth.profile.display_name}` : ''} !
 					</h1>
 					<p class="text-[var(--color-text-secondary)]">Ready to crush your workout?</p>
 				</div>

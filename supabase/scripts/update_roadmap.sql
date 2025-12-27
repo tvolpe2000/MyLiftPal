@@ -6,25 +6,25 @@
 DELETE FROM app_roadmap;
 
 -- ============================================================================
--- PHASE 4: Voice & Polish (Planned - Next up)
+-- PLANNED (Next up - in priority order)
 -- ============================================================================
 
 INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
 (
-  'AI Voice Assistant',
-  'Control your workout with voice commands - log sets, swap exercises, hands-free',
+  'Swap Exercises',
+  'Quickly swap an exercise during your workout when equipment is busy',
   'planned',
   1
 ),
 (
-  'Swap Exercises',
-  'Quickly swap an exercise during your workout when equipment is busy',
+  'Home Page Refresh',
+  'Dynamic greetings and improved workout summary',
   'planned',
   2
 ),
 (
-  'Photo Import',
-  'Snap a photo of handwritten logs to digitize them',
+  'Fill to Optimal',
+  'One-tap to add exercises until all muscles hit optimal volume',
   'planned',
   3
 ),
@@ -33,60 +33,60 @@ INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
   'More color schemes to personalize your experience',
   'planned',
   4
-),
-(
-  'Fill to Optimal',
-  'One-tap to add exercises until all muscles hit optimal volume',
-  'planned',
-  5
 );
 
 -- ============================================================================
--- BACKLOG (Tracked - On the radar)
+-- TRACKED (On the radar - lower priority)
 -- ============================================================================
 
 INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
 (
-  'Rest Timer',
-  'Countdown timer between sets with notifications',
+  'AI Voice Assistant',
+  'Control your workout with voice commands - log sets, swap exercises, hands-free',
   'tracked',
   10
+),
+(
+  'Photo Import',
+  'Snap a photo of handwritten logs to digitize them',
+  'tracked',
+  11
 ),
 (
   'Stats Dashboard',
   'View your progress with charts and personal records',
   'tracked',
-  11
+  12
 ),
 (
   'Duplicate Training Block',
   'Clone an existing block as a starting point',
   'tracked',
-  12
+  13
 ),
 (
   'Export Data',
   'Download your workout history as CSV or JSON',
   'tracked',
-  13
+  14
+),
+(
+  'Rest Timer',
+  'Countdown timer between sets with notifications',
+  'tracked',
+  15
 ),
 (
   'Workout Notes',
   'Add personal notes and journal entries to workouts',
   'tracked',
-  14
+  16
 ),
 (
   'Exercise Videos',
   'Quick links to exercise demonstration videos',
   'tracked',
-  15
-),
-(
-  'Deload Week Generator',
-  'Auto-create recovery weeks based on your training',
-  'tracked',
-  16
+  17
 );
 
 -- Verify the update

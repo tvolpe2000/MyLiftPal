@@ -48,14 +48,29 @@ Quick reference for what's done vs what's remaining.
 
 ---
 
-## Phase 4: Voice & Polish
+## Phase 4: Polish & Features
 
-- [ ] AI Voice Assistant (FAB → voice/text chat to control workouts)
-- [ ] Swap exercises during workout
-- [ ] Photo import (OCR for handwritten logs)
+**Priority: Bugs → UX → Features → Launch Prep**
+
+### 4.1 Bugs (Highest Priority)
+- [ ] Fix screen lock causing page reload (see Known Issues)
+- [ ] Accessibility warnings (a11y) - see Known Issues
+
+### 4.2 UX Improvements
+- [ ] Swap exercises during workout (equipment busy, injury, preference)
+- [ ] Home page redesign (dynamic welcome message)
+- [ ] "Fill to Optimal" button on wizard Step 4
 - [ ] Additional themes
-- [ ] "Fill to Optimal" button on wizard Step 4 (auto-add exercises until all muscles hit green volume)
 - [ ] PWA installation prompt (custom "Install App" button)
+
+### 4.3 AI & Advanced Features
+- [ ] AI Voice Assistant (FAB → voice/text chat to control workouts)
+- [ ] Photo import (OCR for handwritten logs)
+
+### 4.4 Launch Prep (After features stable)
+- [ ] Test data seeding (demo account with workout history)
+- [ ] Beta testing with real users
+- [ ] Bug fixes from beta feedback
 
 ### AI Voice Assistant Details
 
@@ -126,29 +141,37 @@ LLM integrations that can modify user data require specific security measures.
 
 ---
 
-## Pre-Launch Requirements
-
-- [ ] Fix screen lock causing page reload (see Known Issues)
-- [x] Edit completed workouts (add missing sets, fix mistakes)
-- [ ] Test data seeding (demo account with workout history for testing)
-- [ ] Beta testing with real users (currently: few testers)
-- [ ] Bug fixes from beta feedback
-
----
-
 ## Backlog / Nice-to-Have
 
-- [x] In-app changelog & roadmap (see details below) ✅
+Lower priority items - implement after launch or as time permits:
+
+- [ ] Rest timer with notifications (lowest priority per user feedback)
 - [ ] Duplicate training block
 - [ ] Export data (CSV/JSON)
 - [ ] Exercise video links
 - [ ] Superset time optimization
-- [ ] Rest timer with notifications
 - [ ] Workout notes/journaling
 - [ ] Stats/analytics dashboard
 - [ ] Deload week auto-generation
 
-### In-App Changelog & Roadmap
+## Completed
+
+- [x] In-app changelog & roadmap ✅
+- [x] Edit completed workouts (add missing sets, fix mistakes) ✅
+
+---
+
+## Feature Details
+
+### Home Page Redesign
+
+**Dynamic Welcome Message**:
+- Vary the greeting based on time of day, workout status, or streak
+- Keep tone motivating but not overly nice or cheery
+- Examples: "Back at it", "Let's get to work", "Time to lift"
+- Avoid excessive enthusiasm or generic positivity
+
+### In-App Changelog & Roadmap (Completed)
 
 **Goal**: Keep users informed about updates and upcoming features.
 
@@ -263,4 +286,4 @@ From `npm audit` (4 low severity):
 
 ---
 
-*Last updated: 2025-12-27*
+*Last updated: 2025-12-27 (prioritized for launch readiness)*
