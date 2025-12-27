@@ -1,0 +1,19 @@
+# Check if any SQL files in supabase/scripts/ are staged
+STAGED_SQL=$(git diff --cached --name-only --diff-filter=ACM | grep "^supabase/scripts/.*\.sql$" || true)
+
+if [ -n "$STAGED_SQL" ]; then
+  echo "📄 Detected staged SQL scripts - running against database..."
+
+  for file in $STAGED_SQL; do
+    script_name=$(basename "$file")
+    echo "  → Running: $script_name"
+
+    if ! npm run db:run "$script_name" --silent; then
+      echo "❌ SQL script failed: $script_name"
+      echo "   Fix the script and try again."
+      exit 1
+    fi
+  done
+
+  echo "✅ All SQL scripts executed successfully"
+fi
