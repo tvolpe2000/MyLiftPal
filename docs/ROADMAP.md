@@ -111,6 +111,7 @@ LLM integrations that can modify user data require specific security measures.
 
 ## Backlog / Nice-to-Have
 
+- [ ] In-app changelog & roadmap (see details below)
 - [ ] Duplicate training block
 - [ ] Export data (CSV/JSON)
 - [ ] Exercise video links
@@ -119,6 +120,51 @@ LLM integrations that can modify user data require specific security measures.
 - [ ] Workout notes/journaling
 - [ ] Stats/analytics dashboard
 - [ ] Deload week auto-generation
+
+### In-App Changelog & Roadmap
+
+**Goal**: Keep users informed about updates and upcoming features.
+
+**Home page banner**:
+- Shows when new version deployed (compare stored version vs current)
+- Dismissible, remembers in localStorage
+- "What's New" or "v1.2.0 released" style
+- Tapping opens the changelog page
+
+**Changelog page** (`/changelog`):
+- Tab 1: **Recent Updates** - Version history with release notes
+- Tab 2: **Coming Soon** - Future features with status badges
+
+**Status badges for upcoming features**:
+| Status | Color | Meaning |
+|--------|-------|---------|
+| Tracked | Gray | On the radar, not yet planned |
+| Planned | Blue | Scheduled for upcoming release |
+| In Progress | Yellow | Currently being built |
+
+**Data source options**:
+1. **Static JSON file** - Simple, updated at deploy time
+2. **Markdown files** - `/static/changelog/*.md` parsed at build
+3. **CMS/API** - Overkill for now, but future option
+
+**Suggested structure** (`/static/changelog.json`):
+```json
+{
+  "currentVersion": "1.2.0",
+  "releases": [
+    {
+      "version": "1.2.0",
+      "date": "2025-01-15",
+      "highlights": ["Offline mode", "Scroll wheel picker"],
+      "changes": ["Added PWA support", "Fixed RIR bug"]
+    }
+  ],
+  "upcoming": [
+    { "title": "Voice logging", "status": "planned" },
+    { "title": "Rest timer", "status": "tracked" }
+  ]
+}
+```
 
 ---
 
