@@ -6,27 +6,33 @@
 DELETE FROM app_roadmap;
 
 -- ============================================================================
+-- IN PROGRESS (Currently being built)
+-- ============================================================================
+
+INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
+(
+  'Additional Themes',
+  'More color schemes to personalize your experience',
+  'in_progress',
+  1
+);
+
+-- ============================================================================
 -- PLANNED (Next up - in priority order)
 -- ============================================================================
 
 INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
 (
-  'Home Page Refresh',
-  'Dynamic greetings and improved workout summary',
+  'AI Voice Assistant',
+  'Control your workout with voice commands - log sets, swap exercises, hands-free',
   'planned',
-  1
+  10
 ),
 (
-  'Additional Themes',
-  'More color schemes to personalize your experience',
+  'Photo Import',
+  'Snap a photo of handwritten logs to digitize them',
   'planned',
-  2
-),
-(
-  'Social Features',
-  'Share workouts and compare progress with friends',
-  'planned',
-  3
+  11
 );
 
 -- ============================================================================
@@ -35,52 +41,46 @@ INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
 
 INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
 (
-  'AI Voice Assistant',
-  'Control your workout with voice commands - log sets, swap exercises, hands-free',
-  'tracked',
-  10
-),
-(
-  'Photo Import',
-  'Snap a photo of handwritten logs to digitize them',
-  'tracked',
-  11
-),
-(
   'Stats Dashboard',
   'View your progress with charts and personal records',
   'tracked',
-  12
+  20
 ),
 (
   'Duplicate Training Block',
   'Clone an existing block as a starting point',
   'tracked',
-  13
+  21
+),
+(
+  'Social Features',
+  'Share workouts and compare progress with friends',
+  'tracked',
+  22
 ),
 (
   'Export Data',
   'Download your workout history as CSV or JSON',
   'tracked',
-  14
+  23
 ),
 (
   'Rest Timer',
   'Countdown timer between sets with notifications',
   'tracked',
-  15
+  24
 ),
 (
   'Workout Notes',
   'Add personal notes and journal entries to workouts',
   'tracked',
-  16
+  25
 ),
 (
   'Exercise Videos',
   'Quick links to exercise demonstration videos',
   'tracked',
-  17
+  26
 );
 
 -- Verify the update
