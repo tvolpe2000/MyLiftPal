@@ -1,8 +1,8 @@
 // Fill to Optimal Algorithm (Block-Level)
 // Analyzes weekly volume across ALL days and suggests exercises to reach MEV for each muscle
+// Uses database MEV values to match volume bar thresholds
 
 import {
-	getMevForMuscle,
 	getVolumeProgram,
 	getRecommendedRestSeconds,
 	type TrainingGoal,
@@ -10,6 +10,7 @@ import {
 } from '$lib/data/volumePrograms';
 import type { Exercise } from '$lib/types';
 import type { ExerciseSlotDraft, WorkoutDayDraft } from '$lib/types/wizard';
+import type { MuscleGroupData } from '$lib/utils/volume';
 
 export interface MuscleVolume {
 	muscleId: string;
@@ -129,15 +130,23 @@ function findBestDayForMuscle(
 
 /**
  * Calculate fill suggestions for the entire block (all days combined)
+ * Uses database MEV values to match volume bar thresholds
  */
 export function calculateBlockFillSuggestions(
 	days: WorkoutDayDraft[],
 	allSlots: Map<string, ExerciseSlotDraft[]>,
-	level: LifterLevel,
-	muscleGroups: Map<string, string>,
+	muscleGroupsData: MuscleGroupData[],
 	availableExercises: Exercise[]
 ): BlockFillResult {
-	const currentVolume = calculateBlockMuscleVolume(allSlots, muscleGroups);
+	// Build muscle groups map for volume calculation
+	const muscleGroupsMap = new Map<string, string>();
+	const mevMap = new Map<string, number>();
+	for (const mg of muscleGroupsData) {
+		muscleGroupsMap.set(mg.id, mg.display_name);
+		mevMap.set(mg.id, mg.mev); // Use database MEV values!
+	}
+
+	const currentVolume = calculateBlockMuscleVolume(allSlots, muscleGroupsMap);
 	const volumeMap = new Map(currentVolume.map((v) => [v.muscleId, v]));
 
 	const suggestions: FillSuggestion[] = [];
@@ -162,11 +171,11 @@ export function calculateBlockFillSuggestions(
 	for (const muscleId of allTargetMuscles) {
 		const current = volumeMap.get(muscleId);
 		const currentSets = current?.totalEffectiveSets ?? 0;
-		const targetSets = getMevForMuscle(muscleId, level);
+		const targetSets = mevMap.get(muscleId) ?? 8; // Use database MEV!
 
 		if (currentSets < targetSets) {
 			const setsToAdd = Math.ceil(targetSets - currentSets);
-			const muscleName = muscleGroups.get(muscleId) || muscleId;
+			const muscleName = muscleGroupsMap.get(muscleId) || muscleId;
 
 			// Find best day to add this exercise
 			const bestDay = findBestDayForMuscle(muscleId, days, allSlots);
@@ -344,19 +353,4 @@ export function calculateMuscleVolume(
 	const slotsMap = new Map<string, ExerciseSlotDraft[]>();
 	slotsMap.set('day', slots);
 	return calculateBlockMuscleVolume(slotsMap, muscleGroups);
-}
-
-/** @deprecated Use calculateBlockFillSuggestions instead */
-export function calculateFillSuggestions(
-	day: WorkoutDayDraft,
-	slots: ExerciseSlotDraft[],
-	level: LifterLevel,
-	muscleGroups: Map<string, string>,
-	availableExercises: Exercise[]
-): { suggestions: FillSuggestion[]; totalSetsToAdd: number; musclesBelowMev: number } {
-	const slotsMap = new Map<string, ExerciseSlotDraft[]>();
-	slotsMap.set(day.id, slots);
-
-	const result = calculateBlockFillSuggestions([day], slotsMap, level, muscleGroups, availableExercises);
-	return result;
 }

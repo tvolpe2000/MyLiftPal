@@ -2,7 +2,7 @@
 	import { wizard } from '$lib/stores/wizardStore.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { supabase } from '$lib/db/supabase';
-	import type { Exercise, LifterLevel } from '$lib/types';
+	import type { Exercise } from '$lib/types';
 	import { createDefaultExerciseSlot } from '$lib/types/wizard';
 	import { Plus, Trash2, ChevronDown, ChevronUp, BarChart3, Wand2, Sparkles, Clock, Zap } from 'lucide-svelte';
 	import { calculateWeeklyVolume, getVolumeBarColor } from '$lib/utils/volume';
@@ -26,11 +26,6 @@
 	let showFillModal = $state(false);
 	let fillSuggestions = $state<FillSuggestion[]>([]);
 
-	// Get user's lifter level (default to intermediate if not set)
-	const userLevel = $derived<LifterLevel>(
-		(auth.profile?.lifter_level as LifterLevel) || 'intermediate'
-	);
-
 	// Create a muscle groups map for fill calculations
 	const muscleGroupsMap = $derived.by(() => {
 		const map = new Map<string, string>();
@@ -51,13 +46,12 @@
 
 	// Calculate fill suggestions for the entire block
 	function openFillModal() {
-		if (exercises.length === 0 || wizard.workoutDays.length === 0) return;
+		if (exercises.length === 0 || wizard.workoutDays.length === 0 || muscleGroupsData.length === 0) return;
 
 		const result = calculateBlockFillSuggestions(
 			wizard.workoutDays,
 			allSlotsMap,
-			userLevel,
-			muscleGroupsMap,
+			muscleGroupsData, // Pass full data so algorithm uses database MEV values
 			exercises
 		);
 
