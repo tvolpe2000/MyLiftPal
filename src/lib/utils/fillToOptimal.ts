@@ -20,15 +20,29 @@ export interface MuscleVolume {
 	totalEffectiveSets: number;
 }
 
+export interface SetIncrease {
+	slotId: string;
+	dayId: string;
+	dayName: string;
+	exerciseName: string;
+	currentSets: number;
+	newSets: number;
+	setsToAdd: number;
+}
+
 export interface FillSuggestion {
 	muscleId: string;
 	muscleName: string;
 	currentSets: number;
 	targetSets: number; // MEV for this muscle
 	setsToAdd: number;
-	targetDayId: string; // Which day to add this exercise to
+	// Existing exercises to increase sets on
+	setIncreases: SetIncrease[];
+	// New exercises to add (only if set increases aren't enough)
+	targetDayId: string; // Which day to add new exercises to
 	targetDayName: string;
 	suggestedExercises: Exercise[];
+	newExerciseSets: number; // How many sets the new exercise should have
 }
 
 export interface BlockFillResult {
@@ -128,6 +142,7 @@ function findBestDayForMuscle(
 /**
  * Calculate fill suggestions for the entire block (all days combined)
  * Uses database MEV values to match volume bar thresholds
+ * Priority: 1) Increase sets on existing exercises, 2) Add new exercises
  */
 export function calculateBlockFillSuggestions(
 	days: WorkoutDayDraft[],
@@ -164,6 +179,12 @@ export function calculateBlockFillSuggestions(
 		}
 	}
 
+	// Build day name map
+	const dayNameMap = new Map<string, string>();
+	for (const day of days) {
+		dayNameMap.set(day.id, day.name);
+	}
+
 	// Check each target muscle for the entire block
 	for (const muscleId of allTargetMuscles) {
 		const current = volumeMap.get(muscleId);
@@ -171,43 +192,90 @@ export function calculateBlockFillSuggestions(
 		const targetSets = mevMap.get(muscleId) ?? 8; // Use database MEV!
 
 		if (currentSets < targetSets) {
-			const setsToAdd = Math.ceil(targetSets - currentSets);
+			let setsNeeded = Math.ceil(targetSets - currentSets);
 			const muscleName = muscleGroupsMap.get(muscleId) || muscleId;
 
-			// Find best day to add this exercise
-			const bestDay = findBestDayForMuscle(muscleId, days, allSlots);
-			if (!bestDay) continue; // No suitable day found
+			// STEP 1: Find existing exercises that target this muscle (primary) and suggest set increases
+			const setIncreases: SetIncrease[] = [];
+			const MAX_SETS_PER_EXERCISE = 5; // Don't go above 5 sets per exercise
+			const MAX_INCREASE_PER_EXERCISE = 2; // Add up to 2 sets per existing exercise
 
-			// Find exercises for this muscle that aren't already in the block
-			const candidateExercises = availableExercises.filter(
-				(ex) => ex.primary_muscle === muscleId && !existingExerciseIds.has(ex.id)
-			);
-
-			// Sort by equipment variety (prefer different equipment than what's already used)
-			const existingEquipment = new Set<string>();
-			for (const [, slots] of allSlots) {
+			for (const [dayId, slots] of allSlots) {
 				for (const slot of slots) {
-					if (slot.exercise?.equipment) {
-						existingEquipment.add(slot.exercise.equipment);
+					if (setsNeeded <= 0) break;
+					if (slot.exercise?.primary_muscle === muscleId) {
+						const canAdd = Math.min(
+							MAX_INCREASE_PER_EXERCISE,
+							MAX_SETS_PER_EXERCISE - slot.baseSets,
+							setsNeeded
+						);
+						if (canAdd > 0) {
+							setIncreases.push({
+								slotId: slot.id,
+								dayId,
+								dayName: dayNameMap.get(dayId) || dayId,
+								exerciseName: slot.exercise.name,
+								currentSets: slot.baseSets,
+								newSets: slot.baseSets + canAdd,
+								setsToAdd: canAdd
+							});
+							setsNeeded -= canAdd;
+						}
 					}
 				}
+				if (setsNeeded <= 0) break;
 			}
-			candidateExercises.sort((a, b) => {
-				const aUsed = existingEquipment.has(a.equipment) ? 1 : 0;
-				const bUsed = existingEquipment.has(b.equipment) ? 1 : 0;
-				return aUsed - bUsed;
-			});
 
-			suggestions.push({
-				muscleId,
-				muscleName,
-				currentSets: Math.round(currentSets * 10) / 10, // Round to 1 decimal
-				targetSets,
-				setsToAdd,
-				targetDayId: bestDay.dayId,
-				targetDayName: bestDay.dayName,
-				suggestedExercises: candidateExercises.slice(0, 3)
-			});
+			// STEP 2: If we still need more sets, suggest new exercises
+			let newExerciseSets = 0;
+			let candidateExercises: Exercise[] = [];
+			let bestDay = { dayId: '', dayName: '' };
+
+			if (setsNeeded > 0) {
+				// Find best day to add this exercise
+				const foundDay = findBestDayForMuscle(muscleId, days, allSlots);
+				if (foundDay) {
+					bestDay = foundDay;
+
+					// Find exercises for this muscle that aren't already in the block
+					candidateExercises = availableExercises.filter(
+						(ex) => ex.primary_muscle === muscleId && !existingExerciseIds.has(ex.id)
+					);
+
+					// Sort by equipment variety (prefer different equipment than what's already used)
+					const existingEquipment = new Set<string>();
+					for (const [, slots] of allSlots) {
+						for (const slot of slots) {
+							if (slot.exercise?.equipment) {
+								existingEquipment.add(slot.exercise.equipment);
+							}
+						}
+					}
+					candidateExercises.sort((a, b) => {
+						const aUsed = existingEquipment.has(a.equipment) ? 1 : 0;
+						const bUsed = existingEquipment.has(b.equipment) ? 1 : 0;
+						return aUsed - bUsed;
+					});
+
+					newExerciseSets = setsNeeded;
+				}
+			}
+
+			// Only add suggestion if we have something to suggest
+			if (setIncreases.length > 0 || candidateExercises.length > 0) {
+				suggestions.push({
+					muscleId,
+					muscleName,
+					currentSets: Math.round(currentSets * 10) / 10, // Round to 1 decimal
+					targetSets,
+					setsToAdd: Math.ceil(targetSets - currentSets),
+					setIncreases,
+					targetDayId: bestDay.dayId,
+					targetDayName: bestDay.dayName,
+					suggestedExercises: candidateExercises.slice(0, 3),
+					newExerciseSets
+				});
+			}
 		}
 	}
 
@@ -216,91 +284,113 @@ export function calculateBlockFillSuggestions(
 
 	return {
 		suggestions,
-		totalSetsToAdd: suggestions.reduce((sum, s) => sum + s.setsToAdd, 0),
+		totalSetsToAdd: suggestions.reduce((sum, s) => s.setsToAdd, 0),
 		musclesBelowMev: suggestions.length
 	};
 }
 
 /**
+ * Result of generating fill exercises - includes both set increases and new exercises
+ */
+export interface GeneratedFillResult {
+	// New exercise slots to add, grouped by day
+	newSlots: Map<string, ExerciseSlotDraft[]>;
+	// Set increases to apply to existing slots (slotId -> newSetCount)
+	setIncreases: Map<string, number>;
+}
+
+/**
  * Generate exercise slots from fill suggestions, grouped by day
+ * Also returns set increases for existing exercises
  */
 export function generateBlockFillExercises(
 	suggestions: FillSuggestion[],
 	goal: TrainingGoal,
 	level: LifterLevel,
 	currentSlotCounts: Map<string, number> // dayId -> current slot count
-): Map<string, ExerciseSlotDraft[]> {
+): GeneratedFillResult {
 	const program = getVolumeProgram(goal, level);
-	const result = new Map<string, ExerciseSlotDraft[]>();
+	const newSlots = new Map<string, ExerciseSlotDraft[]>();
+	const setIncreases = new Map<string, number>();
 
 	for (const suggestion of suggestions) {
-		if (suggestion.suggestedExercises.length === 0) continue;
-
-		const dayId = suggestion.targetDayId;
-		if (!result.has(dayId)) {
-			result.set(dayId, []);
+		// Apply set increases to existing exercises
+		for (const increase of suggestion.setIncreases) {
+			setIncreases.set(increase.slotId, increase.newSets);
 		}
 
-		const daySlots = result.get(dayId)!;
-		const startOrder = (currentSlotCounts.get(dayId) || 0) + daySlots.length;
+		// Add new exercises if needed
+		if (suggestion.newExerciseSets > 0 && suggestion.suggestedExercises.length > 0) {
+			const dayId = suggestion.targetDayId;
+			if (!dayId) continue;
 
-		// Use the first suggested exercise
-		const exercise = suggestion.suggestedExercises[0];
-		const setsPerExercise = Math.min(suggestion.setsToAdd, 4); // Max 4 sets per exercise
+			if (!newSlots.has(dayId)) {
+				newSlots.set(dayId, []);
+			}
 
-		daySlots.push({
-			id: crypto.randomUUID(),
-			exerciseId: exercise.id,
-			exercise: exercise,
-			slotOrder: startOrder,
-			baseSets: setsPerExercise,
-			setProgression: program.weeklyIncrement / 10, // Scale down for single exercise
-			repRangeMin: program.repRangeMin,
-			repRangeMax: program.repRangeMax,
-			restSeconds: getRecommendedRestSeconds(goal),
-			supersetGroup: null,
-			notes: ''
-		});
+			const daySlots = newSlots.get(dayId)!;
+			const startOrder = (currentSlotCounts.get(dayId) || 0) + daySlots.length;
 
-		// If we need more than 4 sets, add another exercise
-		if (suggestion.setsToAdd > 4 && suggestion.suggestedExercises.length > 1) {
-			const secondExercise = suggestion.suggestedExercises[1];
-			const remainingSets = Math.min(suggestion.setsToAdd - 4, 4);
+			// Use the first suggested exercise
+			const exercise = suggestion.suggestedExercises[0];
+			const setsPerExercise = Math.min(suggestion.newExerciseSets, 4); // Max 4 sets per exercise
 
 			daySlots.push({
 				id: crypto.randomUUID(),
-				exerciseId: secondExercise.id,
-				exercise: secondExercise,
-				slotOrder: startOrder + 1,
-				baseSets: remainingSets,
-				setProgression: program.weeklyIncrement / 10,
+				exerciseId: exercise.id,
+				exercise: exercise,
+				slotOrder: startOrder,
+				baseSets: setsPerExercise,
+				setProgression: program.weeklyIncrement / 10, // Scale down for single exercise
 				repRangeMin: program.repRangeMin,
 				repRangeMax: program.repRangeMax,
 				restSeconds: getRecommendedRestSeconds(goal),
 				supersetGroup: null,
 				notes: ''
 			});
+
+			// If we need more than 4 sets, add another exercise
+			if (suggestion.newExerciseSets > 4 && suggestion.suggestedExercises.length > 1) {
+				const secondExercise = suggestion.suggestedExercises[1];
+				const remainingSets = Math.min(suggestion.newExerciseSets - 4, 4);
+
+				daySlots.push({
+					id: crypto.randomUUID(),
+					exerciseId: secondExercise.id,
+					exercise: secondExercise,
+					slotOrder: startOrder + 1,
+					baseSets: remainingSets,
+					setProgression: program.weeklyIncrement / 10,
+					repRangeMin: program.repRangeMin,
+					repRangeMax: program.repRangeMax,
+					restSeconds: getRecommendedRestSeconds(goal),
+					supersetGroup: null,
+					notes: ''
+				});
+			}
 		}
 	}
 
-	return result;
+	return { newSlots, setIncreases };
 }
 
 /**
  * Check if the entire block is at or above MEV for all target muscles
+ * @deprecated This function has limited utility - use calculateBlockFillSuggestions directly
  */
 export function isBlockAtMev(
 	days: WorkoutDayDraft[],
 	allSlots: Map<string, ExerciseSlotDraft[]>,
-	level: LifterLevel,
-	muscleGroups: Map<string, string>
+	muscleGroupsData: MuscleGroupData[],
+	availableExercises: Exercise[]
 ): boolean {
-	const result = calculateBlockFillSuggestions(days, allSlots, level, muscleGroups, []);
+	const result = calculateBlockFillSuggestions(days, allSlots, muscleGroupsData, availableExercises);
 	return result.musclesBelowMev === 0;
 }
 
 /**
  * Get volume summary for the entire block
+ * @deprecated This function has limited utility - use calculateBlockFillSuggestions directly
  */
 export interface BlockVolumeSummary {
 	totalSets: number;
@@ -312,10 +402,10 @@ export interface BlockVolumeSummary {
 export function getBlockVolumeSummary(
 	days: WorkoutDayDraft[],
 	allSlots: Map<string, ExerciseSlotDraft[]>,
-	level: LifterLevel,
-	muscleGroups: Map<string, string>
+	muscleGroupsData: MuscleGroupData[],
+	availableExercises: Exercise[]
 ): BlockVolumeSummary {
-	const result = calculateBlockFillSuggestions(days, allSlots, level, muscleGroups, []);
+	const result = calculateBlockFillSuggestions(days, allSlots, muscleGroupsData, availableExercises);
 
 	let totalSets = 0;
 	for (const [, slots] of allSlots) {

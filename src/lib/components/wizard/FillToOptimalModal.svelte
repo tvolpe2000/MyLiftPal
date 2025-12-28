@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { X, Zap, Plus, AlertCircle, Calendar } from 'lucide-svelte';
-	import type { FillSuggestion } from '$lib/utils/fillToOptimal';
+	import { X, Zap, Plus, AlertCircle, Calendar, TrendingUp } from 'lucide-svelte';
+	import type { FillSuggestion, SetIncrease } from '$lib/utils/fillToOptimal';
 	import type { ExerciseSlotDraft } from '$lib/types/wizard';
 
 	interface Props {
 		suggestions: FillSuggestion[];
 		totalSetsToAdd: number;
-		onConfirm: (slotsByDay: Map<string, ExerciseSlotDraft[]>) => void;
+		onConfirm: (newSlots: Map<string, ExerciseSlotDraft[]>, setIncreases: Map<string, number>) => void;
 		onClose: () => void;
 	}
 
@@ -34,50 +34,82 @@
 		selectedSuggestions.reduce((sum, s) => sum + s.setsToAdd, 0)
 	);
 
+	// Count set increases vs new exercises
+	const totalSetIncreases = $derived(
+		selectedSuggestions.reduce((sum, s) => sum + s.setIncreases.length, 0)
+	);
+	const totalNewExercises = $derived(
+		selectedSuggestions.filter((s) => s.newExerciseSets > 0 && s.suggestedExercises.length > 0).length
+	);
+
 	// Group suggestions by day for display
 	const suggestionsByDay = $derived.by(() => {
 		const groups = new Map<string, { dayName: string; suggestions: FillSuggestion[] }>();
 		for (const s of selectedSuggestions) {
-			if (!groups.has(s.targetDayId)) {
-				groups.set(s.targetDayId, { dayName: s.targetDayName, suggestions: [] });
+			// For set increases
+			for (const inc of s.setIncreases) {
+				if (!groups.has(inc.dayId)) {
+					groups.set(inc.dayId, { dayName: inc.dayName, suggestions: [] });
+				}
 			}
-			groups.get(s.targetDayId)!.suggestions.push(s);
+			// For new exercises
+			if (s.targetDayId && s.newExerciseSets > 0) {
+				if (!groups.has(s.targetDayId)) {
+					groups.set(s.targetDayId, { dayName: s.targetDayName, suggestions: [] });
+				}
+				groups.get(s.targetDayId)!.suggestions.push(s);
+			}
 		}
 		return groups;
 	});
 
 	function handleConfirm() {
-		// Create slots grouped by day
-		const slotsByDay = new Map<string, ExerciseSlotDraft[]>();
+		// Create slots grouped by day for new exercises
+		const newSlots = new Map<string, ExerciseSlotDraft[]>();
+		// Create set increases map (slotId -> newSetCount)
+		const setIncreases = new Map<string, number>();
 
 		for (const suggestion of selectedSuggestions) {
-			if (suggestion.suggestedExercises.length === 0) continue;
-
-			const dayId = suggestion.targetDayId;
-			if (!slotsByDay.has(dayId)) {
-				slotsByDay.set(dayId, []);
+			// Apply set increases
+			for (const increase of suggestion.setIncreases) {
+				setIncreases.set(increase.slotId, increase.newSets);
 			}
 
-			const daySlots = slotsByDay.get(dayId)!;
-			const exercise = suggestion.suggestedExercises[0];
+			// Add new exercises
+			if (suggestion.newExerciseSets > 0 && suggestion.suggestedExercises.length > 0) {
+				const dayId = suggestion.targetDayId;
+				if (!dayId) continue;
 
-			daySlots.push({
-				id: crypto.randomUUID(),
-				exerciseId: exercise.id,
-				exercise: exercise,
-				slotOrder: 0, // Will be set by parent
-				baseSets: Math.min(suggestion.setsToAdd, 4),
-				setProgression: 0.5,
-				repRangeMin: exercise.default_rep_min,
-				repRangeMax: exercise.default_rep_max,
-				restSeconds: null,
-				supersetGroup: null,
-				notes: ''
-			});
+				if (!newSlots.has(dayId)) {
+					newSlots.set(dayId, []);
+				}
+
+				const daySlots = newSlots.get(dayId)!;
+				const exercise = suggestion.suggestedExercises[0];
+
+				daySlots.push({
+					id: crypto.randomUUID(),
+					exerciseId: exercise.id,
+					exercise: exercise,
+					slotOrder: 0, // Will be set by parent
+					baseSets: Math.min(suggestion.newExerciseSets, 4),
+					setProgression: 0.5,
+					repRangeMin: exercise.default_rep_min,
+					repRangeMax: exercise.default_rep_max,
+					restSeconds: null,
+					supersetGroup: null,
+					notes: ''
+				});
+			}
 		}
 
-		onConfirm(slotsByDay);
+		onConfirm(newSlots, setIncreases);
 	}
+
+	// Check if any suggestion has something actionable
+	const hasActionableItems = $derived(
+		selectedSuggestions.some(s => s.setIncreases.length > 0 || (s.newExerciseSets > 0 && s.suggestedExercises.length > 0))
+	);
 </script>
 
 <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -117,7 +149,7 @@
 				</div>
 			{:else}
 				<p class="text-sm text-[var(--color-text-secondary)] mb-4">
-					Weekly volume gaps detected. Select which muscles to add exercises for:
+					Select which muscles to optimize:
 				</p>
 
 				<div class="space-y-3">
@@ -137,25 +169,45 @@
 								</span>
 							</div>
 
-							<div class="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+							<div class="flex items-center gap-2 text-sm text-[var(--color-text-muted)] mb-2">
 								<span>{suggestion.currentSets} / {suggestion.targetSets} weekly sets</span>
-								<span class="text-[var(--color-text-muted)]">•</span>
-								<span class="flex items-center gap-1 text-[var(--color-text-secondary)]">
-									<Calendar size={12} />
-									{suggestion.targetDayName}
-								</span>
 							</div>
 
-							{#if suggestion.suggestedExercises.length > 0}
-								<div class="mt-2 text-xs text-[var(--color-accent)]">
-									→ {suggestion.suggestedExercises[0]?.name}
+							<!-- Set Increases -->
+							{#if suggestion.setIncreases.length > 0}
+								<div class="space-y-1 mt-2">
+									{#each suggestion.setIncreases as inc}
+										<div class="flex items-center gap-2 text-xs">
+											<TrendingUp size={12} class="text-green-400" />
+											<span class="text-green-400">
+												{inc.exerciseName}: {inc.currentSets} → {inc.newSets} sets
+											</span>
+											<span class="text-[var(--color-text-muted)]">({inc.dayName})</span>
+										</div>
+									{/each}
+								</div>
+							{/if}
+
+							<!-- New Exercise -->
+							{#if suggestion.newExerciseSets > 0 && suggestion.suggestedExercises.length > 0}
+								<div class="flex items-center gap-2 text-xs mt-1">
+									<Plus size={12} class="text-[var(--color-accent)]" />
+									<span class="text-[var(--color-accent)]">
+										Add {suggestion.suggestedExercises[0]?.name}: {Math.min(suggestion.newExerciseSets, 4)} sets
+									</span>
+									<span class="text-[var(--color-text-muted)]">({suggestion.targetDayName})</span>
+								</div>
+							{:else if suggestion.setIncreases.length === 0}
+								<div class="flex items-center gap-2 text-xs mt-1 text-orange-400">
+									<AlertCircle size={12} />
+									<span>No exercises available</span>
 								</div>
 							{/if}
 						</button>
 					{/each}
 				</div>
 
-				{#if selectedSuggestions.some(s => s.suggestedExercises.length === 0)}
+				{#if selectedSuggestions.some(s => s.setIncreases.length === 0 && s.suggestedExercises.length === 0)}
 					<div class="mt-4 bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 flex items-start gap-3">
 						<AlertCircle size={18} class="text-orange-400 flex-shrink-0 mt-0.5" />
 						<p class="text-sm text-orange-400">
@@ -164,19 +216,27 @@
 					</div>
 				{/if}
 
-				<!-- Summary by Day -->
-				{#if suggestionsByDay.size > 1}
+				<!-- Summary -->
+				{#if totalSetIncreases > 0 || totalNewExercises > 0}
 					<div class="mt-4 p-3 bg-[var(--color-bg-tertiary)] rounded-xl">
-						<p class="text-xs font-medium text-[var(--color-text-secondary)] mb-2">Will add to:</p>
-						<div class="space-y-1">
-							{#each [...suggestionsByDay.entries()] as [dayId, group] (dayId)}
-								<div class="flex items-center justify-between text-sm">
-									<span class="text-[var(--color-text-muted)]">{group.dayName}</span>
-									<span class="text-[var(--color-text-primary)]">
-										{group.suggestions.length} exercise{group.suggestions.length !== 1 ? 's' : ''}
+						<p class="text-xs font-medium text-[var(--color-text-secondary)] mb-2">Summary:</p>
+						<div class="space-y-1 text-sm">
+							{#if totalSetIncreases > 0}
+								<div class="flex items-center gap-2">
+									<TrendingUp size={14} class="text-green-400" />
+									<span class="text-[var(--color-text-muted)]">
+										Increase sets on {totalSetIncreases} existing exercise{totalSetIncreases !== 1 ? 's' : ''}
 									</span>
 								</div>
-							{/each}
+							{/if}
+							{#if totalNewExercises > 0}
+								<div class="flex items-center gap-2">
+									<Plus size={14} class="text-[var(--color-accent)]" />
+									<span class="text-[var(--color-text-muted)]">
+										Add {totalNewExercises} new exercise{totalNewExercises !== 1 ? 's' : ''}
+									</span>
+								</div>
+							{/if}
 						</div>
 					</div>
 				{/if}
@@ -204,11 +264,11 @@
 					</button>
 					<button
 						onclick={handleConfirm}
-						disabled={selectedMuscles.size === 0 || selectedSuggestions.every(s => s.suggestedExercises.length === 0)}
+						disabled={selectedMuscles.size === 0 || !hasActionableItems}
 						class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-black transition-colors"
 					>
-						<Plus size={18} />
-						Add Exercises
+						<Zap size={18} />
+						Apply
 					</button>
 				</div>
 			</div>

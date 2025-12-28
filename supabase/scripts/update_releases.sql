@@ -12,6 +12,18 @@
 
 INSERT INTO app_releases (version, title, released_at, highlights, changes) VALUES
 (
+  '1.7.1',
+  'Fill to Optimal Improvements',
+  '2025-12-28T22:00:00Z',
+  ARRAY['Set Increases', 'Smarter Algorithm', 'Better Volume'],
+  ARRAY[
+    'Fill to Optimal now increases sets on existing exercises first (up to +2 per exercise)',
+    'New exercises only added when existing ones can''t cover the volume gap',
+    'Preview shows both set increases and new exercises before applying',
+    'Fixes muscles staying red after applying Fill to Optimal with PPL x2 template'
+  ]
+),
+(
   '1.7.0',
   'Home Page Redesign',
   '2025-12-28T20:00:00Z',

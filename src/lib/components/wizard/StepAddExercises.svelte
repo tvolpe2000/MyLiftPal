@@ -59,8 +59,23 @@
 		showFillModal = true;
 	}
 
-	function handleFillConfirm(slotsByDay: Map<string, import('$lib/types/wizard').ExerciseSlotDraft[]>) {
-		// Add slots to each day
+	function handleFillConfirm(
+		slotsByDay: Map<string, import('$lib/types/wizard').ExerciseSlotDraft[]>,
+		setIncreasesMap: Map<string, number>
+	) {
+		// Apply set increases to existing exercises
+		for (const [slotId, newSets] of setIncreasesMap) {
+			// Find which day this slot belongs to and update it
+			for (const day of wizard.workoutDays) {
+				const slots = wizard.exerciseSlots[day.id] || [];
+				if (slots.some((s) => s.id === slotId)) {
+					wizard.updateExerciseSlot(day.id, slotId, { baseSets: newSets });
+					break;
+				}
+			}
+		}
+
+		// Add new slots to each day
 		for (const [dayId, slots] of slotsByDay) {
 			const existingSlots = wizard.getExercisesForDay(dayId);
 			let slotOrder = existingSlots.length;
