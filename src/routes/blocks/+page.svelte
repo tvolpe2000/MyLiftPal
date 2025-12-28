@@ -5,7 +5,7 @@
 	import AppShell from '$lib/components/AppShell.svelte';
 	import { Plus, Calendar, Dumbbell, Play, Pause, CheckCircle, BarChart3, Clock, Trash2 } from 'lucide-svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
-	import { calculateWeeklyVolume, getVolumeBarColor } from '$lib/utils/volume';
+	import { calculateWeeklyVolume, getVolumeBarColor, getVolumeColorClass } from '$lib/utils/volume';
 	import type { MuscleVolume, MuscleGroupData, ExerciseForVolume } from '$lib/utils/volume';
 	import { calculateDayTime } from '$lib/utils/time';
 	import type { ExerciseSlotForTime } from '$lib/utils/time';
@@ -358,8 +358,8 @@
 												</div>
 												<div class="flex flex-wrap gap-1.5">
 													{#each topVolumes as vol (vol.muscleId)}
-														{@const barColor = getVolumeBarColor(vol.status)}
-														<span class="text-[10px] px-2 py-1 rounded {barColor} bg-opacity-20 whitespace-nowrap">
+														{@const statusClass = getVolumeColorClass(vol.status)}
+														<span class="text-[10px] px-2 py-1 rounded {statusClass} whitespace-nowrap">
 															{vol.muscleName}: {vol.totalSets}
 														</span>
 													{/each}

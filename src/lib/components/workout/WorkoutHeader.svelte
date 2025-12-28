@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { workout } from '$lib/stores/workoutStore.svelte';
 	import { supabase } from '$lib/db/supabase';
-	import { calculateWeeklyVolume, getVolumeBarColor } from '$lib/utils/volume';
+	import { calculateWeeklyVolume, getVolumeBarColor, getVolumeColorClass } from '$lib/utils/volume';
 	import type { MuscleVolume, MuscleGroupData, ExerciseForVolume } from '$lib/utils/volume';
 	import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-svelte';
 
@@ -95,8 +95,8 @@
 				{#if !showVolume}
 					<div class="flex items-center gap-1">
 						{#each topMuscles as vol}
-							{@const barColor = getVolumeBarColor(vol.status)}
-							<span class="px-1.5 py-0.5 rounded text-[10px] {barColor} bg-opacity-20">
+							{@const statusClass = getVolumeColorClass(vol.status)}
+							<span class="px-1.5 py-0.5 rounded text-[10px] {statusClass}">
 								{vol.muscleName.substring(0, 3)}: {vol.totalSets}
 							</span>
 						{/each}
