@@ -9,10 +9,13 @@ export default defineConfig({
 		sveltekit(),
 		SvelteKitPWA({
 			strategies: 'generateSW',
-			registerType: 'autoUpdate',
+			registerType: 'prompt', // Changed from autoUpdate to prevent mid-session blank pages
 			manifest: false,
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+				// Skip waiting can cause issues - let user control updates
+				skipWaiting: false,
+				clientsClaim: false,
 				runtimeCaching: [
 					{
 						urlPattern: /^https:\/\/.*supabase.*\/rest\/v1\/.*/i,
