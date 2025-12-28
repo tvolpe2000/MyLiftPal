@@ -9,7 +9,7 @@
 	import type { MuscleVolume, MuscleGroupData, ExerciseForVolume } from '$lib/utils/volume';
 	import { calculateDayTime, getTimeBarColor, getTimeRange } from '$lib/utils/time';
 	import type { ExerciseSlotForTime, DayTimeEstimate } from '$lib/utils/time';
-	import { calculateFillSuggestions, type FillSuggestion } from '$lib/utils/fillToOptimal';
+	import { calculateBlockFillSuggestions, type FillSuggestion } from '$lib/utils/fillToOptimal';
 	import ExercisePicker from '$lib/components/shared/ExercisePicker.svelte';
 	import FillToOptimalModal from './FillToOptimalModal.svelte';
 
@@ -25,7 +25,6 @@
 	let showSuggestions = $state<string | null>(null); // dayId or null
 	let showFillModal = $state(false);
 	let fillSuggestions = $state<FillSuggestion[]>([]);
-	let fillDayId = $state<string | null>(null);
 
 	// Get user's lifter level (default to intermediate if not set)
 	const userLevel = $derived<LifterLevel>(
@@ -41,38 +40,44 @@
 		return map;
 	});
 
-	// Calculate fill suggestions for a day
-	function openFillModal(dayId: string) {
-		const day = wizard.workoutDays.find((d) => d.id === dayId);
-		if (!day || exercises.length === 0) return;
+	// Build slots map for block-level calculations
+	const allSlotsMap = $derived.by(() => {
+		const map = new Map<string, import('$lib/types/wizard').ExerciseSlotDraft[]>();
+		for (const day of wizard.workoutDays) {
+			map.set(day.id, wizard.exerciseSlots[day.id] || []);
+		}
+		return map;
+	});
 
-		const slots = wizard.getExercisesForDay(dayId);
-		const result = calculateFillSuggestions(
-			day,
-			slots,
+	// Calculate fill suggestions for the entire block
+	function openFillModal() {
+		if (exercises.length === 0 || wizard.workoutDays.length === 0) return;
+
+		const result = calculateBlockFillSuggestions(
+			wizard.workoutDays,
+			allSlotsMap,
 			userLevel,
 			muscleGroupsMap,
 			exercises
 		);
 
 		fillSuggestions = result.suggestions;
-		fillDayId = dayId;
 		showFillModal = true;
 	}
 
-	function handleFillConfirm(newSlots: import('$lib/types/wizard').ExerciseSlotDraft[]) {
-		if (!fillDayId) return;
+	function handleFillConfirm(slotsByDay: Map<string, import('$lib/types/wizard').ExerciseSlotDraft[]>) {
+		// Add slots to each day
+		for (const [dayId, slots] of slotsByDay) {
+			const existingSlots = wizard.getExercisesForDay(dayId);
+			let slotOrder = existingSlots.length;
 
-		const existingSlots = wizard.getExercisesForDay(fillDayId);
-		let slotOrder = existingSlots.length;
-
-		for (const slot of newSlots) {
-			slot.slotOrder = slotOrder++;
-			wizard.addExerciseSlot(fillDayId, slot);
+			for (const slot of slots) {
+				slot.slotOrder = slotOrder++;
+				wizard.addExerciseSlot(dayId, slot);
+			}
 		}
 
 		showFillModal = false;
-		fillDayId = null;
 	}
 
 	$effect(() => {
@@ -385,17 +390,6 @@
 								<span>Add Exercise</span>
 							</button>
 
-							{#if day.targetMuscles.length > 0}
-								<button
-									type="button"
-									onclick={() => openFillModal(day.id)}
-									class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-400 hover:bg-amber-500/30 transition-colors"
-									title="Fill to optimal volume (MEV)"
-								>
-									<Zap size={18} />
-								</button>
-							{/if}
-
 							{#if hasSuggestions && day.targetMuscles.length > 0}
 								<button
 									type="button"
@@ -461,12 +455,12 @@
 	<!-- Weekly Volume Summary -->
 	{#if weeklyVolumes.length > 0}
 		<div class="bg-[var(--color-bg-secondary)] rounded-xl overflow-hidden">
-			<button
-				type="button"
-				onclick={() => (showVolume = !showVolume)}
-				class="w-full flex items-center justify-between p-4 hover:bg-[var(--color-bg-tertiary)] transition-colors"
-			>
-				<div class="flex items-center gap-3">
+			<div class="flex items-center justify-between p-4">
+				<button
+					type="button"
+					onclick={() => (showVolume = !showVolume)}
+					class="flex-1 flex items-center gap-3 hover:opacity-80 transition-opacity"
+				>
 					<BarChart3 size={20} class="text-[var(--color-accent)]" />
 					<div class="text-left">
 						<span class="font-medium text-[var(--color-text-primary)]">Weekly Volume</span>
@@ -488,13 +482,33 @@
 							{/if}
 						</div>
 					</div>
+				</button>
+
+				<div class="flex items-center gap-2">
+					{#if volumeStats.lowCount > 0}
+						<button
+							type="button"
+							onclick={() => openFillModal()}
+							class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-400 hover:bg-amber-500/30 transition-colors text-sm font-medium"
+							title="Fill to optimal weekly volume (MEV)"
+						>
+							<Zap size={16} />
+							<span class="hidden sm:inline">Fill to Optimal</span>
+						</button>
+					{/if}
+					<button
+						type="button"
+						onclick={() => (showVolume = !showVolume)}
+						class="p-1"
+					>
+						{#if showVolume}
+							<ChevronUp size={20} class="text-[var(--color-text-muted)]" />
+						{:else}
+							<ChevronDown size={20} class="text-[var(--color-text-muted)]" />
+						{/if}
+					</button>
 				</div>
-				{#if showVolume}
-					<ChevronUp size={20} class="text-[var(--color-text-muted)]" />
-				{:else}
-					<ChevronDown size={20} class="text-[var(--color-text-muted)]" />
-				{/if}
-			</button>
+			</div>
 
 			{#if showVolume}
 				<div class="p-4 pt-0 space-y-2">
