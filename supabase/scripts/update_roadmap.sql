@@ -11,20 +11,20 @@ DELETE FROM app_roadmap;
 
 INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
 (
-  'Fill to Optimal',
-  'One-tap to add exercises until all muscles hit optimal volume',
-  'in_progress',
-  1
-),
-(
   'Home Page Refresh',
   'Dynamic greetings and improved workout summary',
   'planned',
-  2
+  1
 ),
 (
   'Additional Themes',
   'More color schemes to personalize your experience',
+  'planned',
+  2
+),
+(
+  'Social Features',
+  'Share workouts and compare progress with friends',
   'planned',
   3
 );
