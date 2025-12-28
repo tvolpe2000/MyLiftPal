@@ -12,6 +12,18 @@
 
 INSERT INTO app_releases (version, title, released_at, highlights, changes) VALUES
 (
+  '1.4.0',
+  'User Feedback',
+  '2025-12-28T12:00:00Z',
+  ARRAY['Bug Reports', 'Feature Requests', 'Screenshot Support'],
+  ARRAY[
+    'New feedback form in Settings to report bugs or request features',
+    'Attach up to 3 screenshots to help explain issues',
+    'Choose feedback type: Bug Report, Feature Request, or General',
+    'Your feedback helps us improve MyLiftPal!'
+  ]
+),
+(
   '1.3.0',
   'Workout Flexibility',
   '2025-12-28T00:00:00Z',
