@@ -11,34 +11,22 @@ DELETE FROM app_roadmap;
 
 INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
 (
-  'Swap Exercises',
-  'Quickly swap an exercise during your workout when equipment is busy',
+  'Fill to Optimal',
+  'One-tap to add exercises until all muscles hit optimal volume',
   'in_progress',
   1
-),
-(
-  'Add Exercises Mid-Workout',
-  'Throw in extra exercises during your workout',
-  'planned',
-  2
 ),
 (
   'Home Page Refresh',
   'Dynamic greetings and improved workout summary',
   'planned',
-  3
-),
-(
-  'Fill to Optimal',
-  'One-tap to add exercises until all muscles hit optimal volume',
-  'planned',
-  4
+  2
 ),
 (
   'Additional Themes',
   'More color schemes to personalize your experience',
   'planned',
-  5
+  3
 );
 
 -- ============================================================================

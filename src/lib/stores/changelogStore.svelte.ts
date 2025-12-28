@@ -13,6 +13,9 @@ function createChangelogStore() {
 		initialized: false
 	});
 
+	// Track if we've already checked the profile
+	let profileChecked = false;
+
 	// Compare versions (simple semver comparison)
 	function isNewerVersion(current: string, lastSeen: string | null): boolean {
 		if (!lastSeen) return true;
@@ -29,10 +32,22 @@ function createChangelogStore() {
 		return false;
 	}
 
+	// Re-check hasNewUpdates when profile becomes available
+	function checkProfileVersion() {
+		if (profileChecked || !state.currentVersion) return;
+
+		if (auth.profile) {
+			state.lastSeenVersion = (auth.profile as { last_seen_version?: string }).last_seen_version ?? null;
+			state.hasNewUpdates = isNewerVersion(state.currentVersion, state.lastSeenVersion);
+			profileChecked = true;
+		}
+	}
+
 	async function initialize() {
 		if (state.initialized) return;
 
 		state.loading = true;
+		profileChecked = false;
 
 		try {
 			// Fetch latest release to get current version
@@ -49,9 +64,10 @@ function createChangelogStore() {
 				state.currentVersion = latestRelease.version;
 			}
 
-			// Get user's last seen version from profile
+			// Get user's last seen version from profile (may not be loaded yet)
 			if (auth.profile) {
 				state.lastSeenVersion = (auth.profile as { last_seen_version?: string }).last_seen_version ?? null;
+				profileChecked = true;
 			}
 
 			// Determine if there are new updates
@@ -135,6 +151,7 @@ function createChangelogStore() {
 		get initialized() { return state.initialized; },
 
 		initialize,
+		checkProfileVersion,
 		fetchReleases,
 		fetchRoadmap,
 		markAsSeen,

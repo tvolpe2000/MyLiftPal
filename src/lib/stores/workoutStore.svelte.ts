@@ -12,7 +12,7 @@ import type {
 	WorkoutDayWithSlots,
 	ExerciseSlotWithExercise
 } from '$lib/types/workout';
-import type { WorkoutSession, LoggedSet } from '$lib/types/index';
+import type { WorkoutSession, LoggedSet, Exercise } from '$lib/types/index';
 
 function createWorkoutStore() {
 	let state = $state<WorkoutState>({
@@ -602,6 +602,166 @@ function createWorkoutStore() {
 		}
 	}
 
+	async function swapExercise(
+		exerciseIndex: number,
+		newExercise: Exercise,
+		permanent: boolean
+	): Promise<boolean> {
+		const exerciseState = state.exercises[exerciseIndex];
+		if (!exerciseState) return false;
+
+		const oldSlot = exerciseState.slot;
+
+		try {
+			// If permanent, update the database
+			if (permanent) {
+				const { error } = await supabase
+					.from('exercise_slots')
+					.update({ exercise_id: newExercise.id })
+					.eq('id', oldSlot.id);
+
+				if (error) {
+					console.error('Error updating exercise slot:', error);
+					state.error = 'Failed to swap exercise permanently';
+					return false;
+				}
+			}
+
+			// Update local state with new exercise
+			const updatedSlot: ExerciseSlotWithExercise = {
+				...oldSlot,
+				exercise_id: newExercise.id,
+				exercise: newExercise
+			};
+
+			state.exercises[exerciseIndex] = {
+				...exerciseState,
+				slot: updatedSlot
+			};
+
+			return true;
+		} catch (error) {
+			console.error('Error swapping exercise:', error);
+			state.error = 'Failed to swap exercise';
+			return false;
+		}
+	}
+
+	async function findExerciseSettings(exerciseId: string): Promise<{
+		baseSets: number;
+		repRangeMin: number;
+		repRangeMax: number;
+		fromDay?: string;
+	} | null> {
+		if (!state.trainingBlock) return null;
+
+		// Query exercise_slots in this training block for this exercise
+		const { data } = await supabase
+			.from('exercise_slots')
+			.select('base_sets, rep_range_min, rep_range_max, workout_days!inner(name, training_block_id)')
+			.eq('exercise_id', exerciseId)
+			.eq('workout_days.training_block_id', state.trainingBlock.id)
+			.limit(1)
+			.maybeSingle();
+
+		if (data) {
+			const workoutDay = data.workout_days as unknown as { name: string };
+			return {
+				baseSets: data.base_sets,
+				repRangeMin: data.rep_range_min,
+				repRangeMax: data.rep_range_max,
+				fromDay: workoutDay?.name
+			};
+		}
+		return null;
+	}
+
+	async function addExercise(
+		newExercise: Exercise,
+		permanent: boolean
+	): Promise<boolean> {
+		if (!state.currentWorkoutDay || !state.trainingBlock) return false;
+
+		try {
+			// Get settings: from existing slot in block, or exercise defaults
+			const existing = await findExerciseSettings(newExercise.id);
+			const sets = existing?.baseSets ?? 3;
+			const repMin = existing?.repRangeMin ?? newExercise.default_rep_min;
+			const repMax = existing?.repRangeMax ?? newExercise.default_rep_max;
+
+			const nextSlotOrder = state.exercises.length + 1;
+			let slotData: ExerciseSlotWithExercise;
+
+			if (permanent) {
+				const { data, error } = await supabase
+					.from('exercise_slots')
+					.insert({
+						workout_day_id: state.currentWorkoutDay.id,
+						exercise_id: newExercise.id,
+						slot_order: nextSlotOrder,
+						base_sets: sets,
+						set_progression: 0,
+						rep_range_min: repMin,
+						rep_range_max: repMax
+					})
+					.select()
+					.single();
+
+				if (error) {
+					console.error('Error adding exercise slot:', error);
+					state.error = 'Failed to add exercise permanently';
+					return false;
+				}
+				slotData = { ...data, exercise: newExercise } as ExerciseSlotWithExercise;
+			} else {
+				slotData = {
+					id: `temp-${crypto.randomUUID()}`,
+					workout_day_id: state.currentWorkoutDay.id,
+					exercise_id: newExercise.id,
+					slot_order: nextSlotOrder,
+					base_sets: sets,
+					set_progression: 0,
+					rep_range_min: repMin,
+					rep_range_max: repMax,
+					rest_seconds: null,
+					superset_group: null,
+					notes: null,
+					created_at: new Date().toISOString(),
+					exercise: newExercise
+				} as ExerciseSlotWithExercise;
+			}
+
+			// Build SetState array
+			const newSets: SetState[] = [];
+			for (let i = 1; i <= sets; i++) {
+				newSets.push({
+					id: null,
+					setNumber: i,
+					targetWeight: null,
+					targetReps: Math.round((repMin + repMax) / 2),
+					actualWeight: null,
+					actualReps: null,
+					rir: null,
+					completed: false,
+					previous: null
+				});
+			}
+
+			state.exercises.push({
+				slot: slotData,
+				setsThisWeek: sets,
+				sets: newSets,
+				isExpanded: true
+			});
+
+			return true;
+		} catch (error) {
+			console.error('Error adding exercise:', error);
+			state.error = 'Failed to add exercise';
+			return false;
+		}
+	}
+
 	function reset() {
 		state.trainingBlock = null;
 		state.currentWorkoutDay = null;
@@ -672,6 +832,9 @@ function createWorkoutStore() {
 		logSet,
 		completeWorkout,
 		uncompleteWorkout,
+		swapExercise,
+		findExerciseSettings,
+		addExercise,
 		reset
 	};
 }

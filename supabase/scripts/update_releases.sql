@@ -12,6 +12,19 @@
 
 INSERT INTO app_releases (version, title, released_at, highlights, changes) VALUES
 (
+  '1.3.0',
+  'Workout Flexibility',
+  '2025-12-28T00:00:00Z',
+  ARRAY['Swap Exercises', 'Add Exercises', 'Smart Defaults'],
+  ARRAY[
+    'Swap any exercise during workout when equipment is busy',
+    'Add exercises mid-workout with + button',
+    'Smart defaults: copies settings from same exercise elsewhere in block',
+    'Choose scope: "Just This Session" or "All Future Workouts"',
+    'Already-logged sets preserved with original exercise'
+  ]
+),
+(
   '1.2.1',
   'Quality of Life',
   '2025-12-27T22:00:00Z',

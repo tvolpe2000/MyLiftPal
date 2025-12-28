@@ -44,6 +44,13 @@
 		}
 	});
 
+	// Re-check changelog when profile loads (handles race condition)
+	$effect(() => {
+		if (auth.profile && changelog.initialized) {
+			changelog.checkProfileVersion();
+		}
+	});
+
 	async function loadHomeData() {
 		if (!auth.user) return;
 

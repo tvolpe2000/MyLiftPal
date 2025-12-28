@@ -8,6 +8,7 @@
 	import ExerciseCard from '$lib/components/workout/ExerciseCard.svelte';
 	import SetInputModal from '$lib/components/workout/SetInputModal.svelte';
 	import SyncStatus from '$lib/components/offline/SyncStatus.svelte';
+	import AddExerciseButton from '$lib/components/workout/AddExerciseButton.svelte';
 	import { CheckCircle, Edit3, RotateCcw } from 'lucide-svelte';
 
 	const blockId = $derived($page.params.id);
@@ -101,6 +102,9 @@
 				{#each workout.exercises as exercise, i (exercise.slot.id)}
 					<ExerciseCard {exercise} exerciseIndex={i} />
 				{/each}
+
+				<!-- Add Exercise Button -->
+				<AddExerciseButton />
 
 				{#if workout.exercises.length === 0}
 					<div class="bg-[var(--color-bg-secondary)] rounded-xl p-8 text-center">

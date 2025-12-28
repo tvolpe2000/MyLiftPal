@@ -2,6 +2,7 @@
 	import { workout } from '$lib/stores/workoutStore.svelte';
 	import { ChevronDown, ChevronUp } from 'lucide-svelte';
 	import SetRow from './SetRow.svelte';
+	import SwapExerciseButton from './SwapExerciseButton.svelte';
 	import type { ExerciseState } from '$lib/types/workout';
 
 	let { exercise, exerciseIndex } = $props<{
@@ -75,11 +76,14 @@
 			</div>
 		</div>
 
-		{#if exercise.isExpanded}
-			<ChevronUp size={20} class="text-[var(--color-text-muted)]" />
-		{:else}
-			<ChevronDown size={20} class="text-[var(--color-text-muted)]" />
-		{/if}
+		<div class="flex items-center gap-1">
+			<SwapExerciseButton {exerciseIndex} {exercise} />
+			{#if exercise.isExpanded}
+				<ChevronUp size={20} class="text-[var(--color-text-muted)]" />
+			{:else}
+				<ChevronDown size={20} class="text-[var(--color-text-muted)]" />
+			{/if}
+		</div>
 	</button>
 
 	<!-- Sets List -->

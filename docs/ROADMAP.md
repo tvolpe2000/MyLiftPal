@@ -57,10 +57,10 @@ Quick reference for what's done vs what's remaining.
 - [ ] Accessibility warnings (a11y) - see Known Issues
 
 ### 4.2 UX Improvements
-- [ ] Swap exercises during workout (equipment busy, injury, preference)
-- [ ] Add exercises during workout (throw in extra sets, forgotten exercises)
+- [x] Swap exercises during workout (equipment busy, injury, preference) ✅
+- [x] Add exercises during workout (throw in extra sets, forgotten exercises) ✅
+- [ ] "Fill to Optimal" button on wizard Step 4 (IN PROGRESS)
 - [ ] Home page redesign (dynamic welcome message)
-- [ ] "Fill to Optimal" button on wizard Step 4
 - [ ] Additional themes
 - [ ] PWA installation prompt (custom "Install App" button)
 
@@ -268,6 +268,8 @@ From `npm audit` (4 low severity):
 
 | Date | Feature |
 |------|---------|
+| 2025-12-27 | Swap exercises mid-workout (session-only or permanent) |
+| 2025-12-27 | Add exercises mid-workout with smart defaults |
 | 2025-12-27 | In-app changelog & roadmap page with "What's New" banner |
 | 2025-12-27 | Delete training blocks (trash icon with confirmation modal) |
 | 2025-12-27 | Edit completed workouts (view/edit past sessions from Recent Activity) |
@@ -287,4 +289,4 @@ From `npm audit` (4 low severity):
 
 ---
 
-*Last updated: 2025-12-27 (prioritized for launch readiness)*
+*Last updated: 2025-12-27 (Swap & Add exercises complete, Fill to Optimal in progress)*
