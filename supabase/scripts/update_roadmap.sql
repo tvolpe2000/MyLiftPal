@@ -9,13 +9,7 @@ DELETE FROM app_roadmap;
 -- IN PROGRESS (Currently being built)
 -- ============================================================================
 
-INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
-(
-  'Additional Themes',
-  'More color schemes to personalize your experience',
-  'in_progress',
-  1
-);
+-- (None currently - all items shipped or planned)
 
 -- ============================================================================
 -- PLANNED (Next up - in priority order)
