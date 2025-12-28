@@ -6,7 +6,7 @@
 	import AppShell from '$lib/components/AppShell.svelte';
 	import DownloadButton from '$lib/components/offline/DownloadButton.svelte';
 	import UpdateBanner from '$lib/components/ui/UpdateBanner.svelte';
-	import { Play, Plus, Dumbbell, Clock, TrendingUp, Calendar, ChevronRight } from 'lucide-svelte';
+	import { Play, Plus, Dumbbell, Clock, Calendar, ChevronRight, Trophy, Activity } from 'lucide-svelte';
 	import type { TrainingBlockStatus } from '$lib/types/index';
 	import LifterLevelModal from '$lib/components/onboarding/LifterLevelModal.svelte';
 
@@ -17,7 +17,7 @@
 		current_week: number;
 		current_day: number;
 		status: TrainingBlockStatus;
-		workout_days: { id: string; name: string; day_number: number }[];
+		workout_days: { id: string; name: string; day_number: number; target_muscles: string[] }[];
 	}
 
 	interface RecentSession {
@@ -31,6 +31,18 @@
 	let activeBlock = $state<ActiveBlock | null>(null);
 	let recentSessions = $state<RecentSession[]>([]);
 	let loading = $state(true);
+
+	// Quick stats
+	let workoutsThisWeek = $state(0);
+	let workoutsThisMonth = $state(0);
+	let weightMovedThisWeek = $state(0);
+	let totalWorkouts = $state(0);
+
+	// Weekly volume
+	let weeklyVolume = $state<{ muscle: string; sets: number }[]>([]);
+
+	// Personal records
+	let personalRecords = $state<{ name: string; weight: number; reps: number }[]>([]);
 
 	$effect(() => {
 		if (auth.initialized && !auth.isAuthenticated) {
@@ -58,12 +70,12 @@
 		loading = true;
 
 		try {
-			// Fetch active training block
+			// Fetch active training block with target_muscles
 			const { data: blockData } = await supabase
 				.from('training_blocks')
 				.select(`
 					id, name, total_weeks, current_week, current_day, status,
-					workout_days (id, name, day_number)
+					workout_days (id, name, day_number, target_muscles)
 				`)
 				.eq('user_id', auth.user.id)
 				.eq('status', 'active')
@@ -91,11 +103,137 @@
 			if (sessionData) {
 				recentSessions = sessionData as unknown as RecentSession[];
 			}
+
+			// Load additional stats in parallel
+			await Promise.all([loadQuickStats(), loadWeeklyVolume(), loadPersonalRecords()]);
 		} catch (error) {
 			console.error('Error loading home data:', error);
 		} finally {
 			loading = false;
 		}
+	}
+
+	async function loadQuickStats() {
+		if (!auth.user) return;
+
+		const sevenDaysAgo = new Date();
+		sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+		// Start of current month
+		const startOfMonth = new Date();
+		startOfMonth.setDate(1);
+		startOfMonth.setHours(0, 0, 0, 0);
+
+		// Get sessions from past 7 days for this week stats
+		const { count: weekCount } = await supabase
+			.from('workout_sessions')
+			.select('id', { count: 'exact', head: true })
+			.eq('user_id', auth.user.id)
+			.eq('status', 'completed')
+			.gte('completed_at', sevenDaysAgo.toISOString());
+
+		workoutsThisWeek = weekCount ?? 0;
+
+		// Get total weight moved this week (weight × reps for each completed set)
+		const { data: setsData } = await supabase
+			.from('logged_sets')
+			.select('actual_weight, actual_reps')
+			.eq('completed', true)
+			.gte('logged_at', sevenDaysAgo.toISOString());
+
+		weightMovedThisWeek = (setsData || []).reduce((sum, set) => {
+			const weight = set.actual_weight || 0;
+			const reps = set.actual_reps || 0;
+			return sum + weight * reps;
+		}, 0);
+
+		// Get workouts this month
+		const { count: monthCount } = await supabase
+			.from('workout_sessions')
+			.select('id', { count: 'exact', head: true })
+			.eq('user_id', auth.user.id)
+			.eq('status', 'completed')
+			.gte('completed_at', startOfMonth.toISOString());
+
+		workoutsThisMonth = monthCount ?? 0;
+
+		// Get total workouts (all time)
+		const { count: allTimeCount } = await supabase
+			.from('workout_sessions')
+			.select('id', { count: 'exact', head: true })
+			.eq('user_id', auth.user.id)
+			.eq('status', 'completed');
+
+		totalWorkouts = allTimeCount ?? 0;
+	}
+
+	async function loadWeeklyVolume() {
+		if (!auth.user) return;
+
+		const sevenDaysAgo = new Date();
+		sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+		// Get logged sets from past 7 days with exercise info
+		const { data } = await supabase
+			.from('logged_sets')
+			.select(
+				`
+				id, completed,
+				exercise:exercises (primary_muscle)
+			`
+			)
+			.eq('completed', true)
+			.gte('logged_at', sevenDaysAgo.toISOString());
+
+		// Group by muscle
+		const volumeByMuscle = new Map<string, number>();
+		for (const set of data || []) {
+			const exercise = set.exercise as { primary_muscle: string } | null;
+			const muscle = exercise?.primary_muscle;
+			if (muscle) {
+				volumeByMuscle.set(muscle, (volumeByMuscle.get(muscle) || 0) + 1);
+			}
+		}
+
+		weeklyVolume = Array.from(volumeByMuscle.entries())
+			.map(([muscle, sets]) => ({ muscle, sets }))
+			.sort((a, b) => b.sets - a.sets)
+			.slice(0, 6);
+	}
+
+	async function loadPersonalRecords() {
+		if (!auth.user) return;
+
+		const { data } = await supabase
+			.from('logged_sets')
+			.select(
+				`
+				actual_weight, actual_reps,
+				exercise:exercises (name)
+			`
+			)
+			.eq('completed', true)
+			.not('actual_weight', 'is', null)
+			.order('actual_weight', { ascending: false })
+			.limit(100);
+
+		// Group by exercise, keep max weight
+		const prByExercise = new Map<string, { weight: number; reps: number }>();
+		for (const set of data || []) {
+			const exercise = set.exercise as { name: string } | null;
+			const name = exercise?.name;
+			if (name && set.actual_weight) {
+				const existing = prByExercise.get(name);
+				if (!existing || set.actual_weight > existing.weight) {
+					prByExercise.set(name, { weight: set.actual_weight, reps: set.actual_reps || 0 });
+				}
+			}
+		}
+
+		personalRecords = Array.from(prByExercise.entries())
+			.map(([name, { weight, reps }]) => ({ name, weight, reps }))
+			.sort((a, b) => b.weight - a.weight)
+			.slice(0, 3);
 	}
 
 	const currentDay = $derived(
@@ -107,6 +245,20 @@
 
 	// Show onboarding modal if user hasn't set their lifter level
 	const showOnboarding = $derived(auth.profile && !auth.profile.lifter_level);
+
+	function formatMuscle(muscle: string): string {
+		return muscle
+			.split('_')
+			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+			.join(' ');
+	}
+
+	function formatWeight(lbs: number): string {
+		if (lbs === 0) return '-';
+		if (lbs >= 1000000) return `${(lbs / 1000000).toFixed(1)}M`;
+		if (lbs >= 1000) return `${(lbs / 1000).toFixed(1)}k`;
+		return lbs.toLocaleString();
+	}
 
 	function formatDate(dateStr: string): string {
 		const date = new Date(dateStr);
@@ -157,6 +309,16 @@
 								<p class="text-[var(--color-text-secondary)] text-sm mt-1">
 									{activeBlock.name}
 								</p>
+								<!-- Target muscle groups -->
+								{#if currentDay?.target_muscles?.length}
+									<div class="flex flex-wrap gap-1.5 mt-2">
+										{#each currentDay.target_muscles as muscle}
+											<span class="px-2 py-0.5 text-xs rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)]">
+												{formatMuscle(muscle)}
+											</span>
+										{/each}
+									</div>
+								{/if}
 							</div>
 							<div class="bg-[var(--color-accent)]/10 text-[var(--color-accent)] px-3 py-1 rounded-full text-sm font-medium">
 								Day {activeBlock.current_day}
@@ -183,37 +345,73 @@
 						</a>
 					</div>
 
-					<!-- Quick Actions -->
-					<div class="grid grid-cols-2 gap-4">
-						<a
-							href="/blocks"
-							class="bg-[var(--color-bg-secondary)] rounded-xl p-4 hover:bg-[var(--color-bg-tertiary)] transition-colors"
-						>
-							<div class="flex items-center gap-3">
-								<div class="w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 flex items-center justify-center">
-									<TrendingUp size={20} class="text-[var(--color-accent)]" />
-								</div>
-								<div>
-									<div class="font-medium text-[var(--color-text-primary)]">View Block</div>
-									<div class="text-sm text-[var(--color-text-muted)]">Progress & Days</div>
-								</div>
-							</div>
-						</a>
-						<a
-							href="/exercises"
-							class="bg-[var(--color-bg-secondary)] rounded-xl p-4 hover:bg-[var(--color-bg-tertiary)] transition-colors"
-						>
-							<div class="flex items-center gap-3">
-								<div class="w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 flex items-center justify-center">
-									<Dumbbell size={20} class="text-[var(--color-accent)]" />
-								</div>
-								<div>
-									<div class="font-medium text-[var(--color-text-primary)]">Exercises</div>
-									<div class="text-sm text-[var(--color-text-muted)]">Browse Library</div>
-								</div>
-							</div>
-						</a>
+					<!-- Quick Stats Strip -->
+					<div class="grid grid-cols-4 gap-2">
+						<div class="bg-[var(--color-bg-secondary)] rounded-lg p-3 text-center">
+							<div class="text-2xl font-bold text-[var(--color-accent)]">{workoutsThisWeek}</div>
+							<div class="text-xs text-[var(--color-text-muted)]">This Week</div>
+						</div>
+						<div class="bg-[var(--color-bg-secondary)] rounded-lg p-3 text-center">
+							<div class="text-2xl font-bold text-[var(--color-text-primary)]">{workoutsThisMonth}</div>
+							<div class="text-xs text-[var(--color-text-muted)]">This Month</div>
+						</div>
+						<div class="bg-[var(--color-bg-secondary)] rounded-lg p-3 text-center">
+							<div class="text-2xl font-bold text-[var(--color-text-primary)]">{formatWeight(weightMovedThisWeek)}</div>
+							<div class="text-xs text-[var(--color-text-muted)]">Lbs Moved</div>
+						</div>
+						<div class="bg-[var(--color-bg-secondary)] rounded-lg p-3 text-center">
+							<div class="text-2xl font-bold text-[var(--color-text-primary)]">{totalWorkouts}</div>
+							<div class="text-xs text-[var(--color-text-muted)]">Total</div>
+						</div>
 					</div>
+
+					<!-- Weekly Volume Summary -->
+					{#if weeklyVolume.length > 0}
+						<div class="bg-[var(--color-bg-secondary)] rounded-xl p-4">
+							<div class="flex items-center gap-2 mb-3">
+								<Activity size={18} class="text-[var(--color-accent)]" />
+								<h3 class="font-semibold text-[var(--color-text-primary)]">This Week's Volume</h3>
+							</div>
+							<div class="grid grid-cols-2 gap-x-4 gap-y-1">
+								{#each weeklyVolume as { muscle, sets }}
+									<div class="flex justify-between items-center py-1">
+										<span class="text-sm text-[var(--color-text-secondary)]">{formatMuscle(muscle)}</span>
+										<span class="text-sm font-medium text-[var(--color-text-primary)]">{sets} sets</span>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					<!-- Personal Records -->
+					{#if personalRecords.length > 0}
+						<div class="bg-[var(--color-bg-secondary)] rounded-xl p-4">
+							<div class="flex items-center gap-2 mb-3">
+								<Trophy size={18} class="text-yellow-500" />
+								<h3 class="font-semibold text-[var(--color-text-primary)]">Personal Records</h3>
+							</div>
+							<div class="space-y-2">
+								{#each personalRecords as pr, i}
+									<div class="flex items-center gap-3">
+										<div
+											class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
+											{i === 0
+												? 'bg-yellow-500/20 text-yellow-400'
+												: i === 1
+													? 'bg-gray-400/20 text-gray-400'
+													: 'bg-orange-600/20 text-orange-500'}"
+										>
+											{i + 1}
+										</div>
+										<div class="flex-1 min-w-0">
+											<div class="font-medium text-[var(--color-text-primary)] truncate">{pr.name}</div>
+											<div class="text-sm text-[var(--color-text-muted)]">{pr.weight} lbs × {pr.reps}</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
 				{:else}
 					<!-- No Active Block -->
 					<div class="bg-[var(--color-bg-secondary)] rounded-xl p-6 text-center">
@@ -231,6 +429,29 @@
 							<Plus size={20} />
 							Create Training Block
 						</a>
+					</div>
+
+					<!-- Feature Preview for New Users -->
+					<div class="space-y-3">
+						<p class="text-sm text-[var(--color-text-muted)] text-center">What you'll track:</p>
+						<div class="grid grid-cols-4 gap-2">
+							<div class="bg-[var(--color-bg-secondary)] rounded-lg p-3 text-center">
+								<div class="text-2xl font-bold text-[var(--color-text-muted)]">-</div>
+								<div class="text-xs text-[var(--color-text-muted)]">This Week</div>
+							</div>
+							<div class="bg-[var(--color-bg-secondary)] rounded-lg p-3 text-center">
+								<div class="text-2xl font-bold text-[var(--color-text-muted)]">-</div>
+								<div class="text-xs text-[var(--color-text-muted)]">This Month</div>
+							</div>
+							<div class="bg-[var(--color-bg-secondary)] rounded-lg p-3 text-center">
+								<div class="text-2xl font-bold text-[var(--color-text-muted)]">-</div>
+								<div class="text-xs text-[var(--color-text-muted)]">Lbs Moved</div>
+							</div>
+							<div class="bg-[var(--color-bg-secondary)] rounded-lg p-3 text-center">
+								<div class="text-2xl font-bold text-[var(--color-text-muted)]">-</div>
+								<div class="text-xs text-[var(--color-text-muted)]">Total</div>
+							</div>
+						</div>
 					</div>
 				{/if}
 

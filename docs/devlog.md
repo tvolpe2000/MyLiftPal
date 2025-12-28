@@ -6,6 +6,74 @@ Chronological notes on development progress, sessions, and learnings.
 
 ## 2025-12-28
 
+### Session: Home Page Redesign
+
+**What was done:**
+- Removed redundant Quick Actions grid (View Block, Exercises cards already in bottom nav)
+- Added target muscle chips to Today's Workout card (shows muscles for current day)
+- Added Quick Stats Strip with 4 metrics:
+  - This Week: Workouts completed in past 7 days
+  - This Month: Workouts completed this calendar month
+  - Lbs Moved: Total weight × reps for all sets this week
+  - Total: All-time workout count
+- Added This Week's Volume section showing top 6 muscles trained with set counts
+- Added Personal Records section with top 3 heaviest lifts (gold/silver/bronze badges)
+- Added "What you'll track" preview for new users without active block
+- Replaced Day Streak (discouraging when broken) with This Month (positive growth metric)
+- Replaced Block % (confusing at week 1) with Total workouts (always growing)
+
+**Technical decisions:**
+- Weight formatting: Uses `k` suffix for 1000+ (e.g., "24.5k lbs")
+- Volume query joins logged_sets with exercises to get primary_muscle
+- PRs query groups by exercise name and keeps max weight per exercise
+- Stats queries run in parallel with Promise.all for performance
+
+**Files modified:**
+- `src/routes/+page.svelte` - Complete home page redesign
+
+---
+
+### Session: Application Stability & Bug Fixes
+
+**What was done:**
+- Fixed blank page issue caused by Supabase token refresh:
+  - Auth store now handles `TOKEN_REFRESHED` event separately
+  - Updates session/user without triggering profile refetch
+  - Prevents unnecessary database calls that could cause errors
+- Fixed Fill to Optimal not making all muscles green:
+  - Root cause: Different formulas for secondary muscle volume calculation
+  - `fillToOptimal.ts` used extra `0.5` multiplier that `volume.ts` didn't use
+  - Unified formula: `indirect_sets = sets × secondary.weight` (no extra multiplier)
+- Added application stability infrastructure:
+  - Created `src/hooks.client.ts` for global error handling
+  - Catches unhandled promise rejections and global errors
+  - Monitors visibility changes and navigation events
+  - Created `src/routes/+error.svelte` error boundary page
+  - Changed PWA from `autoUpdate` to `prompt` mode to prevent mid-session reloads
+
+**Bug fixes summary:**
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| Blank pages on token refresh | Auth handler refetched profile on every event | Handle `TOKEN_REFRESHED` separately |
+| Fill to Optimal muscles still red | Extra `0.5` multiplier in fillToOptimal.ts | Remove multiplier to match volume.ts |
+| PWA causing page reloads | `autoUpdate` mode | Switch to `prompt` mode |
+
+**Files created:**
+- `src/hooks.client.ts` - Global error and navigation monitoring
+- `src/routes/+error.svelte` - User-friendly error page
+
+**Files modified:**
+- `src/lib/stores/auth.svelte.ts` - Token refresh handling
+- `src/lib/utils/fillToOptimal.ts` - Removed SECONDARY_MUSCLE_WEIGHT constant
+- `vite.config.ts` - PWA configuration changes
+
+**Technical notes:**
+- Volume calculation formula must be identical in both `volume.ts` and `fillToOptimal.ts`
+- The `secondary.weight` value (0.3-0.5) already accounts for reduced contribution
+- Token refresh happens automatically every hour; must not cause UI disruption
+
+---
+
 ### Session: Goal-Based Training & Fill to Optimal
 
 **What was done:**

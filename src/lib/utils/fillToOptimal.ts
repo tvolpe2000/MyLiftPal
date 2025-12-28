@@ -37,9 +37,6 @@ export interface BlockFillResult {
 	musclesBelowMev: number;
 }
 
-// Secondary muscle contribution weights
-const SECONDARY_MUSCLE_WEIGHT = 0.5; // 50% contribution from secondary muscles
-
 /**
  * Calculate current weekly volume for each muscle across ALL days in the block
  */
@@ -75,11 +72,11 @@ export function calculateBlockMuscleVolume(
 				primaryVolume.totalEffectiveSets += sets;
 			}
 
-			// Add indirect sets for secondary muscles
+			// Add indirect sets for secondary muscles (same formula as volume.ts)
 			for (const secondary of exercise.secondary_muscles || []) {
 				const secondaryVolume = volumeMap.get(secondary.muscle);
 				if (secondaryVolume) {
-					const contribution = sets * secondary.weight * SECONDARY_MUSCLE_WEIGHT;
+					const contribution = sets * secondary.weight;
 					secondaryVolume.indirectSets += contribution;
 					secondaryVolume.totalEffectiveSets += contribution;
 				}

@@ -12,6 +12,33 @@
 
 INSERT INTO app_releases (version, title, released_at, highlights, changes) VALUES
 (
+  '1.7.0',
+  'Home Page Redesign',
+  '2025-12-28T20:00:00Z',
+  ARRAY['Quick Stats', 'Personal Records', 'Weekly Volume'],
+  ARRAY[
+    'New Quick Stats strip: This Week, This Month, Lbs Moved, Total workouts',
+    'Personal Records section showing your top 3 heaviest lifts',
+    'This Week''s Volume shows sets per muscle group',
+    'Target muscle chips on Today''s Workout card',
+    'Removed redundant Quick Actions (already in bottom nav)',
+    '"What you''ll track" preview for new users'
+  ]
+),
+(
+  '1.6.0',
+  'Stability & Bug Fixes',
+  '2025-12-28T18:00:00Z',
+  ARRAY['Application Stability', 'Fill to Optimal Fix', 'Error Handling'],
+  ARRAY[
+    'Fixed blank page issue when Supabase refreshes authentication tokens',
+    'Fixed Fill to Optimal not making all muscles green (volume calculation mismatch)',
+    'Added error boundary page for graceful error recovery',
+    'Improved PWA update behavior to prevent mid-session disruptions',
+    'Added global error monitoring for better debugging'
+  ]
+),
+(
   '1.5.0',
   'Goal-Based Training',
   '2025-12-28T14:00:00Z',

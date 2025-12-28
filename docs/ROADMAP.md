@@ -62,12 +62,12 @@ Quick reference for what's done vs what's remaining.
 - [x] "Fill to Optimal" button in wizard Step 3 (block-level analysis) ✅
 - [x] Goal-based training (Hypertrophy, Strength, Maintenance, Power, Endurance) ✅
 - [x] Lifter level profiles (Beginner, Intermediate, Advanced) with onboarding ✅
-- [ ] Home page redesign (dynamic welcome message)
-- [ ] Additional themes
+- [x] Home page redesign (Quick Stats, Weekly Volume, Personal Records) ✅
+- [ ] Additional themes (in progress)
 - [ ] PWA installation prompt (custom "Install App" button)
 
 ### 4.3 AI & Advanced Features
-- [ ] AI Voice Assistant (FAB → voice/text chat to control workouts)
+- [ ] AI Voice Assistant (FAB → voice/text chat to control workouts) - planned
 - [ ] Photo import (OCR for handwritten logs)
 
 ### 4.4 Launch Prep (After features stable)
@@ -150,6 +150,7 @@ Lower priority items - implement after launch or as time permits:
 
 - [ ] Rest timer with notifications (lowest priority per user feedback)
 - [ ] Duplicate training block
+- [ ] Social features (share workouts, follow friends, leaderboards) - tracked
 - [ ] Export data (CSV/JSON)
 - [ ] Exercise video links
 - [ ] Superset time optimization
@@ -270,6 +271,9 @@ From `npm audit` (4 low severity):
 
 | Date | Feature |
 |------|---------|
+| 2025-12-28 | Home page redesign - Quick Stats, Weekly Volume, Personal Records, target muscle chips |
+| 2025-12-28 | Application stability fixes - auth token refresh, error boundaries, PWA updates |
+| 2025-12-28 | Fill to Optimal volume calculation fix - unified formulas with volume bars |
 | 2025-12-28 | Fill to Optimal - block-level volume analysis with exercise suggestions |
 | 2025-12-28 | Goal-based training blocks (Hypertrophy, Strength, Maintenance, Power, Endurance) |
 | 2025-12-28 | Lifter level profiles with onboarding modal (Beginner, Intermediate, Advanced) |
@@ -295,4 +299,4 @@ From `npm audit` (4 low severity):
 
 ---
 
-*Last updated: 2025-12-28 (Fill to Optimal, Goal-based training, Lifter levels complete)*
+*Last updated: 2025-12-28 (v1.7.0 Home page redesign - Quick Stats, Weekly Volume, Personal Records)*
