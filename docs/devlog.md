@@ -6,6 +6,37 @@ Chronological notes on development progress, sessions, and learnings.
 
 ## 2025-12-28
 
+### Session: Fill to Optimal Algorithm Improvements
+
+**What was done:**
+- Fixed Fill to Optimal requiring multiple clicks to reach MEV for all muscles
+- Algorithm now prioritizes increasing sets on existing exercises first:
+  - Finds exercises that target the under-volume muscle
+  - Increases sets up to +2 per exercise (max 5 total sets)
+  - Only adds new exercises when existing ones can't cover the gap
+- Modal now adds second exercise when a muscle needs more than 4 sets
+- UI shows both set increases (green TrendingUp icon) and new exercises (accent Plus icon)
+- Summary section shows counts of set increases vs new exercises
+
+**Root cause of original issue:**
+- Modal only added ONE exercise capped at 4 sets
+- If muscle needed 6 sets, only 4 were added, leaving 2 sets short
+- Required second Fill to Optimal click to close the gap
+
+**Technical changes:**
+- Added `SetIncrease` interface to track set increases on existing exercises
+- Updated `FillSuggestion` to include `setIncreases` array and `newExerciseSets` count
+- Algorithm two-step approach: 1) increase existing, 2) add new if needed
+- `handleFillConfirm` now uses `wizard.updateExerciseSlot()` to modify existing slots
+- Modal adds second exercise when `newExerciseSets > 4`
+
+**Files modified:**
+- `src/lib/utils/fillToOptimal.ts` - Algorithm refactor with set increases priority
+- `src/lib/components/wizard/FillToOptimalModal.svelte` - UI and logic for set increases + second exercise
+- `src/lib/components/wizard/StepAddExercises.svelte` - Updated callback to apply set increases
+
+---
+
 ### Session: Home Page Redesign
 
 **What was done:**
