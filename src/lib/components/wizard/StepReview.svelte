@@ -3,8 +3,11 @@
 	import { supabase } from '$lib/db/supabase';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { goto } from '$app/navigation';
-	import { Calendar, Clock, Dumbbell, CheckCircle } from 'lucide-svelte';
+	import { Calendar, Clock, Dumbbell, CheckCircle, Target } from 'lucide-svelte';
 	import { calculateSetsForWeek } from '$lib/types/wizard';
+	import { TRAINING_GOALS } from '$lib/data/volumePrograms';
+
+	const selectedGoal = $derived(TRAINING_GOALS.find((g) => g.value === wizard.goal));
 
 	let saving = $state(false);
 	let error = $state('');
@@ -49,6 +52,7 @@
 				.insert({
 					user_id: auth.user.id,
 					name: wizard.blockName,
+					goal: wizard.goal,
 					total_weeks: wizard.totalWeeks,
 					current_week: 1,
 					current_day: 1,
@@ -123,7 +127,15 @@
 	<div class="bg-[var(--color-bg-secondary)] rounded-xl p-6">
 		<h3 class="text-lg font-semibold text-[var(--color-text-primary)] mb-4">{wizard.blockName}</h3>
 
-		<div class="grid grid-cols-3 gap-4">
+		<div class="grid grid-cols-4 gap-4">
+			<div class="text-center">
+				<div class="flex items-center justify-center gap-2 text-[var(--color-accent)] mb-1">
+					<Target size={18} />
+				</div>
+				<div class="text-lg font-bold text-[var(--color-text-primary)]">{selectedGoal?.emoji}</div>
+				<div class="text-xs text-[var(--color-text-muted)]">{selectedGoal?.label}</div>
+			</div>
+
 			<div class="text-center">
 				<div class="flex items-center justify-center gap-2 text-[var(--color-accent)] mb-1">
 					<Calendar size={18} />

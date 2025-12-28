@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { wizard } from '$lib/stores/wizardStore.svelte';
 	import { supabase } from '$lib/db/supabase';
-	import { Calendar, Clock, Repeat, FileText } from 'lucide-svelte';
+	import { Calendar, Clock, Repeat, FileText, Target } from 'lucide-svelte';
 	import TemplatePicker from './TemplatePicker.svelte';
+	import { TRAINING_GOALS } from '$lib/data/volumePrograms';
 	import type { WorkoutTemplate } from '$lib/data/templates';
 	import type { Exercise } from '$lib/types';
 
@@ -94,6 +95,34 @@
 			placeholder="e.g., Hypertrophy Block 1, Summer Cut..."
 			class="w-full bg-[var(--color-bg-tertiary)] border border-[var(--color-border)] rounded-lg px-4 py-3 text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] transition-colors"
 		/>
+	</div>
+
+	<!-- Training Goal -->
+	<div class="bg-[var(--color-bg-secondary)] rounded-xl p-6">
+		<div class="flex items-center gap-3 mb-4">
+			<Target size={20} class="text-[var(--color-accent)]" />
+			<span class="font-medium text-[var(--color-text-primary)]">Training Goal</span>
+		</div>
+		<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+			{#each TRAINING_GOALS as goal}
+				<button
+					type="button"
+					onclick={() => wizard.setGoal(goal.value)}
+					class="flex flex-col items-center gap-2 p-4 rounded-xl transition-colors
+					{wizard.goal === goal.value
+						? 'bg-[var(--color-accent)]/20 border-2 border-[var(--color-accent)]'
+						: 'bg-[var(--color-bg-tertiary)] border-2 border-transparent hover:border-[var(--color-border)]'}"
+				>
+					<span class="text-2xl">{goal.emoji}</span>
+					<span class="font-medium text-sm {wizard.goal === goal.value ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}">
+						{goal.label}
+					</span>
+					<span class="text-xs text-[var(--color-text-muted)] text-center">
+						{goal.description}
+					</span>
+				</button>
+			{/each}
+		</div>
 	</div>
 
 	<!-- Duration -->

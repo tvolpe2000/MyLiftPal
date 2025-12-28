@@ -12,6 +12,18 @@
 
 INSERT INTO app_releases (version, title, released_at, highlights, changes) VALUES
 (
+  '1.5.0',
+  'Goal-Based Training',
+  '2025-12-28T14:00:00Z',
+  ARRAY['Training Goals', 'Lifter Levels', 'Fill to Optimal'],
+  ARRAY[
+    'Set your experience level (Beginner, Intermediate, Advanced) for personalized volume targets',
+    'Choose training goals per block: Hypertrophy, Strength, Maintenance, Power, or Endurance',
+    'New Fill to Optimal button suggests exercises to reach minimum effective volume (MEV)',
+    'Research-backed volume calculations from training science literature'
+  ]
+),
+(
   '1.4.0',
   'User Feedback',
   '2025-12-28T12:00:00Z',

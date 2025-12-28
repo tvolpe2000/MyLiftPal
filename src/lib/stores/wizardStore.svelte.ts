@@ -6,12 +6,13 @@ import type {
 } from '$lib/types/wizard';
 import { createDefaultWorkoutDay } from '$lib/types/wizard';
 import type { WorkoutTemplate, TemplateExercise } from '$lib/data/templates';
-import type { Exercise } from '$lib/types';
+import type { Exercise, TrainingGoal } from '$lib/types';
 
 function createWizardStore() {
 	let state = $state<WizardState>({
 		currentStep: 1,
 		blockName: '',
+		goal: 'hypertrophy',
 		totalWeeks: 5,
 		daysPerWeek: 4,
 		timeBudgetMinutes: null,
@@ -64,6 +65,7 @@ function createWizardStore() {
 		state = {
 			currentStep: 1,
 			blockName: '',
+			goal: 'hypertrophy',
 			totalWeeks: 5,
 			daysPerWeek: 4,
 			timeBudgetMinutes: null,
@@ -93,6 +95,11 @@ function createWizardStore() {
 	// Step 1: Basic Info
 	function setBlockName(name: string) {
 		state.blockName = name;
+		state.isDirty = true;
+	}
+
+	function setGoal(goal: TrainingGoal) {
+		state.goal = goal;
 		state.isDirty = true;
 	}
 
@@ -265,6 +272,9 @@ function createWizardStore() {
 		get blockName() {
 			return state.blockName;
 		},
+		get goal() {
+			return state.goal;
+		},
 		get totalWeeks() {
 			return state.totalWeeks;
 		},
@@ -304,6 +314,7 @@ function createWizardStore() {
 		nextStep,
 		prevStep,
 		setBlockName,
+		setGoal,
 		setTotalWeeks,
 		setDaysPerWeek,
 		setTimeBudget,

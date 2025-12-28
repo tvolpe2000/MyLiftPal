@@ -7,7 +7,9 @@ export type {
 	PumpRating,
 	SorenessRating,
 	WorkloadRating,
-	SecondaryMuscle
+	SecondaryMuscle,
+	TrainingGoal,
+	LifterLevel
 } from './database';
 
 // Re-export changelog types

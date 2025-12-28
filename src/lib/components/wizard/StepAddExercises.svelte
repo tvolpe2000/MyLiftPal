@@ -1,14 +1,17 @@
 <script lang="ts">
 	import { wizard } from '$lib/stores/wizardStore.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { supabase } from '$lib/db/supabase';
-	import type { Exercise } from '$lib/types';
+	import type { Exercise, LifterLevel } from '$lib/types';
 	import { createDefaultExerciseSlot } from '$lib/types/wizard';
-	import { Plus, Trash2, ChevronDown, ChevronUp, BarChart3, Wand2, Sparkles, Clock } from 'lucide-svelte';
+	import { Plus, Trash2, ChevronDown, ChevronUp, BarChart3, Wand2, Sparkles, Clock, Zap } from 'lucide-svelte';
 	import { calculateWeeklyVolume, getVolumeBarColor } from '$lib/utils/volume';
 	import type { MuscleVolume, MuscleGroupData, ExerciseForVolume } from '$lib/utils/volume';
 	import { calculateDayTime, getTimeBarColor, getTimeRange } from '$lib/utils/time';
 	import type { ExerciseSlotForTime, DayTimeEstimate } from '$lib/utils/time';
+	import { calculateFillSuggestions, type FillSuggestion } from '$lib/utils/fillToOptimal';
 	import ExercisePicker from '$lib/components/shared/ExercisePicker.svelte';
+	import FillToOptimalModal from './FillToOptimalModal.svelte';
 
 	let exercises = $state<Exercise[]>([]);
 	let muscleGroupsData = $state<MuscleGroupData[]>([]);
@@ -20,6 +23,57 @@
 	let showVolume = $state(true);
 	let showTime = $state(true);
 	let showSuggestions = $state<string | null>(null); // dayId or null
+	let showFillModal = $state(false);
+	let fillSuggestions = $state<FillSuggestion[]>([]);
+	let fillDayId = $state<string | null>(null);
+
+	// Get user's lifter level (default to intermediate if not set)
+	const userLevel = $derived<LifterLevel>(
+		(auth.profile?.lifter_level as LifterLevel) || 'intermediate'
+	);
+
+	// Create a muscle groups map for fill calculations
+	const muscleGroupsMap = $derived.by(() => {
+		const map = new Map<string, string>();
+		for (const mg of muscleGroupsData) {
+			map.set(mg.id, mg.display_name);
+		}
+		return map;
+	});
+
+	// Calculate fill suggestions for a day
+	function openFillModal(dayId: string) {
+		const day = wizard.workoutDays.find((d) => d.id === dayId);
+		if (!day || exercises.length === 0) return;
+
+		const slots = wizard.getExercisesForDay(dayId);
+		const result = calculateFillSuggestions(
+			day,
+			slots,
+			userLevel,
+			muscleGroupsMap,
+			exercises
+		);
+
+		fillSuggestions = result.suggestions;
+		fillDayId = dayId;
+		showFillModal = true;
+	}
+
+	function handleFillConfirm(newSlots: import('$lib/types/wizard').ExerciseSlotDraft[]) {
+		if (!fillDayId) return;
+
+		const existingSlots = wizard.getExercisesForDay(fillDayId);
+		let slotOrder = existingSlots.length;
+
+		for (const slot of newSlots) {
+			slot.slotOrder = slotOrder++;
+			wizard.addExerciseSlot(fillDayId, slot);
+		}
+
+		showFillModal = false;
+		fillDayId = null;
+	}
 
 	$effect(() => {
 		loadExercises();
@@ -331,6 +385,17 @@
 								<span>Add Exercise</span>
 							</button>
 
+							{#if day.targetMuscles.length > 0}
+								<button
+									type="button"
+									onclick={() => openFillModal(day.id)}
+									class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-400 hover:bg-amber-500/30 transition-colors"
+									title="Fill to optimal volume (MEV)"
+								>
+									<Zap size={18} />
+								</button>
+							{/if}
+
 							{#if hasSuggestions && day.targetMuscles.length > 0}
 								<button
 									type="button"
@@ -566,3 +631,13 @@
 	onclose={closePicker}
 	preselectedMuscle={pickerMuscle}
 />
+
+<!-- Fill to Optimal Modal -->
+{#if showFillModal}
+	<FillToOptimalModal
+		suggestions={fillSuggestions}
+		totalSetsToAdd={fillSuggestions.reduce((sum, s) => sum + s.setsToAdd, 0)}
+		onConfirm={handleFillConfirm}
+		onClose={() => (showFillModal = false)}
+	/>
+{/if}

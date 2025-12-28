@@ -3,13 +3,15 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import AppShell from '$lib/components/AppShell.svelte';
 	import { supabase } from '$lib/db/supabase';
-	import { User, Scale, Palette, LogOut, Dumbbell, MessageSquare, Send } from 'lucide-svelte';
+	import { User, Scale, Palette, LogOut, Dumbbell, MessageSquare, Send, TrendingUp } from 'lucide-svelte';
+	import { LIFTER_LEVELS, type LifterLevel } from '$lib/data/volumePrograms';
 	import ThemeSelector from '$lib/components/ThemeSelector.svelte';
 	import { workoutSettings, type WeightInputStyle, type WeightIncrement } from '$lib/stores/workoutSettings.svelte';
 
 	let displayName = $state(auth.profile?.display_name || '');
 	let weightUnit = $state<'lbs' | 'kg'>(auth.profile?.weight_unit || 'lbs');
 	let defaultRestSeconds = $state(auth.profile?.default_rest_seconds || 90);
+	let lifterLevel = $state<LifterLevel | null>(auth.profile?.lifter_level as LifterLevel | null ?? null);
 	let saving = $state(false);
 	let saved = $state(false);
 
@@ -24,6 +26,7 @@
 			displayName = auth.profile.display_name || '';
 			weightUnit = auth.profile.weight_unit;
 			defaultRestSeconds = auth.profile.default_rest_seconds;
+			lifterLevel = auth.profile.lifter_level as LifterLevel | null ?? null;
 		}
 	});
 
@@ -39,6 +42,7 @@
 				display_name: displayName,
 				weight_unit: weightUnit,
 				default_rest_seconds: defaultRestSeconds,
+				lifter_level: lifterLevel,
 				updated_at: new Date().toISOString()
 			} as never)
 			.eq('id', auth.user.id);
@@ -99,6 +103,37 @@
 								</div>
 							</div>
 						</div>
+					</div>
+
+					<!-- Experience Level Section -->
+					<div class="bg-[var(--color-bg-secondary)] rounded-xl p-6">
+						<div class="flex items-center gap-3 mb-6">
+							<TrendingUp size={20} class="text-[var(--color-accent)]" />
+							<h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Experience Level</h2>
+						</div>
+
+						<div class="space-y-3">
+							{#each LIFTER_LEVELS as level}
+								<button
+									onclick={() => lifterLevel = level.value}
+									class="w-full flex items-center gap-4 p-4 rounded-xl transition-colors {lifterLevel === level.value
+										? 'bg-[var(--color-accent)]/20 border-2 border-[var(--color-accent)]'
+										: 'bg-[var(--color-bg-tertiary)] border-2 border-transparent hover:border-[var(--color-border)]'}"
+								>
+									<div class="w-10 h-10 flex items-center justify-center text-xl rounded-full bg-[var(--color-bg-primary)]">
+										{level.emoji}
+									</div>
+									<div class="text-left flex-1">
+										<div class="font-medium text-[var(--color-text-primary)]">{level.label}</div>
+										<div class="text-xs text-[var(--color-text-secondary)]">{level.description}</div>
+									</div>
+								</button>
+							{/each}
+						</div>
+
+						<p class="text-xs text-[var(--color-text-muted)] mt-4">
+							Your experience level affects volume recommendations for Fill to Optimal
+						</p>
 					</div>
 
 					<!-- Preferences Section -->

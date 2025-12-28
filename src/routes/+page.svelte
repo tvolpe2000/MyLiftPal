@@ -8,6 +8,7 @@
 	import UpdateBanner from '$lib/components/ui/UpdateBanner.svelte';
 	import { Play, Plus, Dumbbell, Clock, TrendingUp, Calendar, ChevronRight } from 'lucide-svelte';
 	import type { TrainingBlockStatus } from '$lib/types/index';
+	import LifterLevelModal from '$lib/components/onboarding/LifterLevelModal.svelte';
 
 	interface ActiveBlock {
 		id: string;
@@ -103,6 +104,9 @@
 
 	const currentDayName = $derived(currentDay?.name || 'Workout');
 	const currentDayId = $derived(currentDay?.id || '');
+
+	// Show onboarding modal if user hasn't set their lifter level
+	const showOnboarding = $derived(auth.profile && !auth.profile.lifter_level);
 
 	function formatDate(dateStr: string): string {
 		const date = new Date(dateStr);
@@ -270,6 +274,11 @@
 			</div>
 		</div>
 	</AppShell>
+
+	<!-- Lifter Level Onboarding Modal -->
+	{#if showOnboarding}
+		<LifterLevelModal />
+	{/if}
 {:else}
 	<div class="min-h-screen flex items-center justify-center">
 		<div class="text-[var(--color-text-secondary)]">Redirecting...</div>

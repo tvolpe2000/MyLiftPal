@@ -1,4 +1,4 @@
-import type { Exercise } from './index';
+import type { Exercise, TrainingGoal } from './index';
 
 export type WizardStep = 1 | 2 | 3 | 4;
 
@@ -29,6 +29,7 @@ export interface WizardState {
 
 	// Step 1: Basic Info
 	blockName: string;
+	goal: TrainingGoal;
 	totalWeeks: number;
 	daysPerWeek: number;
 	timeBudgetMinutes: number | null;

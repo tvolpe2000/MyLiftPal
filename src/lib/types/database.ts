@@ -12,6 +12,7 @@ export interface Database {
 					display_name: string | null;
 					weight_unit: 'lbs' | 'kg';
 					default_rest_seconds: number;
+					lifter_level: LifterLevel | null;
 					created_at: string;
 					updated_at: string;
 				};
@@ -20,6 +21,7 @@ export interface Database {
 					display_name?: string | null;
 					weight_unit?: 'lbs' | 'kg';
 					default_rest_seconds?: number;
+					lifter_level?: LifterLevel | null;
 					created_at?: string;
 					updated_at?: string;
 				};
@@ -28,6 +30,7 @@ export interface Database {
 					display_name?: string | null;
 					weight_unit?: 'lbs' | 'kg';
 					default_rest_seconds?: number;
+					lifter_level?: LifterLevel | null;
 					created_at?: string;
 					updated_at?: string;
 				};
@@ -126,6 +129,7 @@ export interface Database {
 					current_week: number;
 					current_day: number;
 					status: TrainingBlockStatus;
+					goal: TrainingGoal;
 					time_budget_minutes: number | null;
 					started_at: string;
 					completed_at: string | null;
@@ -139,6 +143,7 @@ export interface Database {
 					current_week?: number;
 					current_day?: number;
 					status?: TrainingBlockStatus;
+					goal?: TrainingGoal;
 					time_budget_minutes?: number | null;
 					started_at?: string;
 					completed_at?: string | null;
@@ -152,6 +157,7 @@ export interface Database {
 					current_week?: number;
 					current_day?: number;
 					status?: TrainingBlockStatus;
+					goal?: TrainingGoal;
 					time_budget_minutes?: number | null;
 					started_at?: string;
 					completed_at?: string | null;
@@ -404,3 +410,7 @@ export interface SecondaryMuscle {
 	muscle: string;
 	weight: number;
 }
+
+// Training goal and lifter level types
+export type TrainingGoal = 'maintenance' | 'hypertrophy' | 'strength' | 'power' | 'endurance';
+export type LifterLevel = 'beginner' | 'intermediate' | 'advanced';
