@@ -39,7 +39,11 @@
 		selectedSuggestions.reduce((sum, s) => sum + s.setIncreases.length, 0)
 	);
 	const totalNewExercises = $derived(
-		selectedSuggestions.filter((s) => s.newExerciseSets > 0 && s.suggestedExercises.length > 0).length
+		selectedSuggestions.reduce((sum, s) => {
+			if (s.newExerciseSets <= 0 || s.suggestedExercises.length === 0) return sum;
+			// Count 1 for first exercise, plus 1 more if second exercise needed
+			return sum + 1 + (s.newExerciseSets > 4 && s.suggestedExercises.length > 1 ? 1 : 0);
+		}, 0)
 	);
 
 	// Group suggestions by day for display
@@ -86,13 +90,14 @@
 
 				const daySlots = newSlots.get(dayId)!;
 				const exercise = suggestion.suggestedExercises[0];
+				const setsForFirst = Math.min(suggestion.newExerciseSets, 4);
 
 				daySlots.push({
 					id: crypto.randomUUID(),
 					exerciseId: exercise.id,
 					exercise: exercise,
 					slotOrder: 0, // Will be set by parent
-					baseSets: Math.min(suggestion.newExerciseSets, 4),
+					baseSets: setsForFirst,
 					setProgression: 0.5,
 					repRangeMin: exercise.default_rep_min,
 					repRangeMax: exercise.default_rep_max,
@@ -100,6 +105,26 @@
 					supersetGroup: null,
 					notes: ''
 				});
+
+				// If we need more than 4 sets, add a second exercise
+				if (suggestion.newExerciseSets > 4 && suggestion.suggestedExercises.length > 1) {
+					const secondExercise = suggestion.suggestedExercises[1];
+					const remainingSets = Math.min(suggestion.newExerciseSets - 4, 4);
+
+					daySlots.push({
+						id: crypto.randomUUID(),
+						exerciseId: secondExercise.id,
+						exercise: secondExercise,
+						slotOrder: 0, // Will be set by parent
+						baseSets: remainingSets,
+						setProgression: 0.5,
+						repRangeMin: secondExercise.default_rep_min,
+						repRangeMax: secondExercise.default_rep_max,
+						restSeconds: null,
+						supersetGroup: null,
+						notes: ''
+					});
+				}
 			}
 		}
 
@@ -188,7 +213,7 @@
 								</div>
 							{/if}
 
-							<!-- New Exercise -->
+							<!-- New Exercises -->
 							{#if suggestion.newExerciseSets > 0 && suggestion.suggestedExercises.length > 0}
 								<div class="flex items-center gap-2 text-xs mt-1">
 									<Plus size={12} class="text-[var(--color-accent)]" />
@@ -197,6 +222,15 @@
 									</span>
 									<span class="text-[var(--color-text-muted)]">({suggestion.targetDayName})</span>
 								</div>
+								{#if suggestion.newExerciseSets > 4 && suggestion.suggestedExercises.length > 1}
+									<div class="flex items-center gap-2 text-xs mt-1">
+										<Plus size={12} class="text-[var(--color-accent)]" />
+										<span class="text-[var(--color-accent)]">
+											Add {suggestion.suggestedExercises[1]?.name}: {Math.min(suggestion.newExerciseSets - 4, 4)} sets
+										</span>
+										<span class="text-[var(--color-text-muted)]">({suggestion.targetDayName})</span>
+									</div>
+								{/if}
 							{:else if suggestion.setIncreases.length === 0}
 								<div class="flex items-center gap-2 text-xs mt-1 text-orange-400">
 									<AlertCircle size={12} />
