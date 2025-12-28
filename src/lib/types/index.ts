@@ -18,6 +18,13 @@ export type {
 	ChangelogState
 } from './changelog';
 
+// Re-export feedback types
+export type {
+	FeedbackType,
+	FeedbackStatus,
+	UserFeedback
+} from './feedback';
+
 // Convenience type aliases for database rows
 import type { Database } from './database';
 

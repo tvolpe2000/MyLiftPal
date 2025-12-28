@@ -3,7 +3,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import AppShell from '$lib/components/AppShell.svelte';
 	import { supabase } from '$lib/db/supabase';
-	import { User, Scale, Palette, LogOut, Dumbbell } from 'lucide-svelte';
+	import { User, Scale, Palette, LogOut, Dumbbell, MessageSquare, Send } from 'lucide-svelte';
 	import ThemeSelector from '$lib/components/ThemeSelector.svelte';
 	import { workoutSettings, type WeightInputStyle, type WeightIncrement } from '$lib/stores/workoutSettings.svelte';
 
@@ -244,6 +244,24 @@
 								</div>
 							{/if}
 						</div>
+					</div>
+
+					<!-- Feedback Section -->
+					<div class="bg-[var(--color-bg-secondary)] rounded-xl p-6">
+						<div class="flex items-center gap-3 mb-4">
+							<MessageSquare size={20} class="text-[var(--color-accent)]" />
+							<h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Feedback</h2>
+						</div>
+						<p class="text-sm text-[var(--color-text-secondary)] mb-4">
+							Found a bug? Have an idea? Let us know!
+						</p>
+						<a
+							href="/feedback"
+							class="flex items-center justify-center gap-2 w-full py-3 bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-border)] text-[var(--color-text-primary)] rounded-lg transition-colors"
+						>
+							<Send size={18} />
+							Send Feedback
+						</a>
 					</div>
 
 					<!-- Save Button -->
