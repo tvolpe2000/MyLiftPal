@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-export type ThemeId = 'emerald' | 'blue' | 'cyan' | 'indigo' | 'orange' | 'slate' | 'red' | 'pink';
+export type ThemeId = 'emerald' | 'blue' | 'cyan' | 'indigo' | 'orange' | 'slate' | 'red' | 'pink' | 'amber' | 'violet' | 'zinc';
 
 export interface ThemeColors {
 	accent: string;
@@ -145,6 +145,54 @@ export const themes: Record<ThemeId, Theme> = {
 			bgSecondary: '#1a0f17',
 			bgTertiary: '#24161f',
 			border: '#3a2032',
+			textPrimary: '#ffffff',
+			textSecondary: '#a1a1aa',
+			textMuted: '#71717a'
+		}
+	},
+	amber: {
+		id: 'amber',
+		name: 'Amber',
+		colors: {
+			accent: '#f59e0b',
+			accentHover: '#fbbf24',
+			accentMuted: 'rgba(245, 158, 11, 0.2)',
+			bgPrimary: '#0f0c05',
+			bgSecondary: '#1a1508',
+			bgTertiary: '#241e0c',
+			border: '#3a3010',
+			textPrimary: '#ffffff',
+			textSecondary: '#a1a1aa',
+			textMuted: '#71717a'
+		}
+	},
+	violet: {
+		id: 'violet',
+		name: 'Violet',
+		colors: {
+			accent: '#8b5cf6',
+			accentHover: '#a78bfa',
+			accentMuted: 'rgba(139, 92, 246, 0.2)',
+			bgPrimary: '#0d0a14',
+			bgSecondary: '#150f1c',
+			bgTertiary: '#1e1626',
+			border: '#302040',
+			textPrimary: '#ffffff',
+			textSecondary: '#a1a1aa',
+			textMuted: '#71717a'
+		}
+	},
+	zinc: {
+		id: 'zinc',
+		name: 'Zinc',
+		colors: {
+			accent: '#a1a1aa',
+			accentHover: '#d4d4d8',
+			accentMuted: 'rgba(161, 161, 170, 0.2)',
+			bgPrimary: '#09090b',
+			bgSecondary: '#18181b',
+			bgTertiary: '#27272a',
+			border: '#3f3f46',
 			textPrimary: '#ffffff',
 			textSecondary: '#a1a1aa',
 			textMuted: '#71717a'
