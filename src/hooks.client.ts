@@ -6,28 +6,43 @@ import { browser } from '$app/environment';
 if (browser) {
 	// Catch unhandled promise rejections
 	window.addEventListener('unhandledrejection', (event) => {
-		console.error('Unhandled promise rejection:', event.reason);
-
-		// Prevent the error from causing a blank page
-		// The app will continue running but log the error
+		console.error('[MyLiftPal] Unhandled promise rejection:', event.reason);
 		event.preventDefault();
 	});
 
 	// Catch global errors
 	window.addEventListener('error', (event) => {
-		console.error('Global error:', event.error);
-
-		// Log additional context
-		console.error('Error occurred at:', event.filename, 'line', event.lineno);
+		console.error('[MyLiftPal] Global error:', event.error);
+		console.error('[MyLiftPal] Error at:', event.filename, 'line', event.lineno);
 	});
 
-	// Detect when the page visibility changes (phone locked, tab switched)
+	// Detect page visibility changes
 	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState === 'visible') {
-			// Page became visible again - could trigger a state refresh here
-			console.log('Page became visible');
-		}
+		console.log('[MyLiftPal] Visibility changed:', document.visibilityState);
 	});
+
+	// Detect before unload (page about to navigate away or reload)
+	window.addEventListener('beforeunload', (event) => {
+		console.log('[MyLiftPal] Page unloading - this may indicate a redirect or reload');
+	});
+
+	// Detect page hide (more reliable on mobile)
+	window.addEventListener('pagehide', (event) => {
+		console.log('[MyLiftPal] Page hide event, persisted:', event.persisted);
+	});
+
+	// Monitor for unexpected navigation
+	const originalPushState = history.pushState;
+	history.pushState = function (...args) {
+		console.log('[MyLiftPal] pushState:', args[2]);
+		return originalPushState.apply(this, args);
+	};
+
+	const originalReplaceState = history.replaceState;
+	history.replaceState = function (...args) {
+		console.log('[MyLiftPal] replaceState:', args[2]);
+		return originalReplaceState.apply(this, args);
+	};
 }
 
 export {};

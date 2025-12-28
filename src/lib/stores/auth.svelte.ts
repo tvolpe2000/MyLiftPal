@@ -37,13 +37,41 @@ function createAuthStore() {
 
 		// Listen for auth changes
 		supabase.auth.onAuthStateChange(async (event, session) => {
-			state.session = session;
-			state.user = session?.user ?? null;
+			console.log('[MyLiftPal Auth] Auth state changed:', event, session ? 'has session' : 'no session');
 
-			if (session?.user) {
-				await fetchProfile(session.user.id);
-			} else {
-				state.profile = null;
+			try {
+				// Handle token refresh - don't clear state if refresh fails
+				if (event === 'TOKEN_REFRESHED') {
+					console.log('[MyLiftPal Auth] Token refreshed successfully');
+					if (session) {
+						state.session = session;
+						state.user = session.user;
+					}
+					// Don't refetch profile on token refresh - it's expensive and unnecessary
+					return;
+				}
+
+				// Handle sign out
+				if (event === 'SIGNED_OUT') {
+					console.log('[MyLiftPal Auth] User signed out');
+					state.session = null;
+					state.user = null;
+					state.profile = null;
+					return;
+				}
+
+				// Handle sign in or initial session
+				state.session = session;
+				state.user = session?.user ?? null;
+
+				if (session?.user) {
+					await fetchProfile(session.user.id);
+				} else {
+					state.profile = null;
+				}
+			} catch (error) {
+				console.error('[MyLiftPal Auth] Error in auth state change handler:', error);
+				// Don't clear state on error - keep user logged in
 			}
 		});
 	}
