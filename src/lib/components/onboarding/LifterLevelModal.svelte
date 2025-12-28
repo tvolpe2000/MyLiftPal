@@ -11,32 +11,41 @@
 
 	let selectedLevel = $state<LifterLevel | null>(null);
 	let saving = $state(false);
+	let error = $state<string | null>(null);
 
 	async function handleSelect(level: LifterLevel) {
 		if (!auth.user) return;
 
 		selectedLevel = level;
 		saving = true;
+		error = null;
 
-		const { error } = await supabase
-			.from('profiles')
-			.update({
-				lifter_level: level,
-				updated_at: new Date().toISOString()
-			} as never)
-			.eq('id', auth.user.id);
+		try {
+			const { error: updateError } = await supabase
+				.from('profiles')
+				.update({
+					lifter_level: level,
+					updated_at: new Date().toISOString()
+				} as never)
+				.eq('id', auth.user.id);
 
-		if (error) {
-			console.error('Error saving lifter level:', error);
+			if (updateError) {
+				console.error('Error saving lifter level:', updateError);
+				error = updateError.message || 'Failed to save. Please try again.';
+				saving = false;
+				return;
+			}
+
+			// Refresh profile to update the auth store
+			await auth.fetchProfile(auth.user.id);
+
 			saving = false;
-			return;
+			onselect?.(level);
+		} catch (e) {
+			console.error('Unexpected error:', e);
+			error = 'An unexpected error occurred. Please try again.';
+			saving = false;
 		}
-
-		// Refresh profile
-		await auth.fetchProfile(auth.user.id);
-
-		saving = false;
-		onselect?.(level);
 	}
 </script>
 
@@ -52,6 +61,12 @@
 
 		<!-- Level Options -->
 		<div class="p-6 space-y-3">
+			{#if error}
+				<div class="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm mb-2">
+					{error}
+				</div>
+			{/if}
+
 			{#each LIFTER_LEVELS as level}
 				<button
 					onclick={() => handleSelect(level.value)}
