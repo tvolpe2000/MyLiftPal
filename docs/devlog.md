@@ -6,6 +6,31 @@ Chronological notes on development progress, sessions, and learnings.
 
 ## 2025-12-28
 
+### Session: Theme Expansion & Contrast Fix
+
+**What was done:**
+- Fixed volume pill text contrast issue on all themes:
+  - Root cause: Components used `getVolumeBarColor()` (background only) instead of `getVolumeColorClass()` (background + text)
+  - `--color-text-muted` (gray) had poor contrast against tinted backgrounds like `bg-red-500/20`
+  - Updated WorkoutHeader.svelte and blocks/+page.svelte to use `getVolumeColorClass()`
+- Added 3 new themes (8 → 11 total):
+  - **Amber**: Gold accent (#f59e0b) for achievement/motivation vibes
+  - **Violet**: Purple accent (#8b5cf6) fills gap between Indigo and Pink
+  - **Zinc**: True neutral gray (#a1a1aa) without blue tint (unlike Slate)
+
+**Color spectrum now covered:**
+- Cool: Emerald, Blue, Cyan, Indigo, Violet
+- Warm-Cool: Pink
+- Warm: Red, Orange, Amber
+- Neutral: Slate (blue-tinted), Zinc (true gray)
+
+**Files modified:**
+- `src/lib/stores/theme.svelte.ts` - Added amber, violet, zinc themes
+- `src/lib/components/workout/WorkoutHeader.svelte` - Fixed contrast
+- `src/routes/blocks/+page.svelte` - Fixed contrast
+
+---
+
 ### Session: Fill to Optimal Algorithm Improvements
 
 **What was done:**

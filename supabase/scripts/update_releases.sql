@@ -12,6 +12,20 @@
 
 INSERT INTO app_releases (version, title, released_at, highlights, changes) VALUES
 (
+  '1.8.0',
+  'Theme Expansion',
+  '2025-12-29T00:00:00Z',
+  ARRAY['11 Themes', 'Amber Gold', 'Violet Purple', 'Zinc Neutral'],
+  ARRAY[
+    'Added 3 new themes: Amber (gold), Violet (purple), and Zinc (neutral gray)',
+    'Amber theme for achievement and motivation vibes',
+    'Violet fills the gap between Indigo and Pink',
+    'Zinc provides true neutral gray without blue tint (unlike Slate)',
+    'Fixed volume pill text contrast on all themes',
+    'Total themes now: 11 (was 8)'
+  ]
+),
+(
   '1.7.1',
   'Fill to Optimal Improvements',
   '2025-12-28T22:00:00Z',
