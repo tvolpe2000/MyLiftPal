@@ -59,7 +59,9 @@ Quick reference for what's done vs what's remaining.
 ### 4.2 UX Improvements
 - [x] Swap exercises during workout (equipment busy, injury, preference) ✅
 - [x] Add exercises during workout (throw in extra sets, forgotten exercises) ✅
-- [ ] "Fill to Optimal" button on wizard Step 4 (IN PROGRESS)
+- [x] "Fill to Optimal" button in wizard Step 3 (block-level analysis) ✅
+- [x] Goal-based training (Hypertrophy, Strength, Maintenance, Power, Endurance) ✅
+- [x] Lifter level profiles (Beginner, Intermediate, Advanced) with onboarding ✅
 - [ ] Home page redesign (dynamic welcome message)
 - [ ] Additional themes
 - [ ] PWA installation prompt (custom "Install App" button)
@@ -268,6 +270,10 @@ From `npm audit` (4 low severity):
 
 | Date | Feature |
 |------|---------|
+| 2025-12-28 | Fill to Optimal - block-level volume analysis with exercise suggestions |
+| 2025-12-28 | Goal-based training blocks (Hypertrophy, Strength, Maintenance, Power, Endurance) |
+| 2025-12-28 | Lifter level profiles with onboarding modal (Beginner, Intermediate, Advanced) |
+| 2025-12-28 | User feedback system with screenshot support |
 | 2025-12-27 | Swap exercises mid-workout (session-only or permanent) |
 | 2025-12-27 | Add exercises mid-workout with smart defaults |
 | 2025-12-27 | In-app changelog & roadmap page with "What's New" banner |
@@ -289,4 +295,4 @@ From `npm audit` (4 low severity):
 
 ---
 
-*Last updated: 2025-12-27 (Swap & Add exercises complete, Fill to Optimal in progress)*
+*Last updated: 2025-12-28 (Fill to Optimal, Goal-based training, Lifter levels complete)*

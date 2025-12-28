@@ -4,6 +4,76 @@ Chronological notes on development progress, sessions, and learnings.
 
 ---
 
+## 2025-12-28
+
+### Session: Goal-Based Training & Fill to Optimal
+
+**What was done:**
+- Implemented lifter level system:
+  - Added `lifter_level` column to profiles (beginner, intermediate, advanced)
+  - Created onboarding modal for new/existing users without a level
+  - Added level selector to Settings page
+- Implemented training goals:
+  - Added `goal` column to training_blocks (hypertrophy, strength, maintenance, power, endurance)
+  - Goal selector in wizard Step 1 with emoji icons
+  - Beginner + Power auto-switches to Strength programming
+- Created volume programs data (`src/lib/data/volumePrograms.ts`):
+  - Research-backed volume calculations from training science literature
+  - MEV/MAV/MRV values by goal and level
+  - Helper functions for volume calculations
+- Implemented Fill to Optimal feature:
+  - Initially per-day, then refactored to **block-level** analysis
+  - Analyzes weekly volume across ALL days to prevent over-volume with splits like PPL x2
+  - Button in Weekly Volume section header (only shows when muscles below MEV)
+  - Modal shows which day each exercise will be added to
+  - Uses database MEV values to match volume bar thresholds
+
+**Bug fixes:**
+- Fixed onboarding modal not closing (migration hadn't been run)
+- Fixed Fill to Optimal using different MEV values than volume bars
+  - Was using hardcoded values from volumePrograms.ts
+  - Now uses database MEV values from muscle_groups table
+
+**Technical decisions:**
+- Block-level Fill to Optimal prevents over-volume with 2x/week splits
+- Database MEV values used (not hardcoded) for consistency with volume bars
+- Onboarding modal auto-shows for users without lifter_level
+- Level stored on profile, goal stored on training_block
+
+**Files created:**
+- `src/lib/data/volumePrograms.ts` - Volume program data and helpers
+- `src/lib/components/onboarding/LifterLevelModal.svelte` - Onboarding modal
+- `src/lib/components/wizard/FillToOptimalModal.svelte` - Fill suggestions modal
+- `src/lib/utils/fillToOptimal.ts` - Fill algorithm
+- `supabase/migrations/005_lifter_level_and_goals.sql` - Database migration
+- `supabase/scripts/005_lifter_level_and_goals.sql` - Migration script
+
+**Files modified:**
+- `src/lib/types/database.ts` - Added lifter_level and goal types
+- `src/lib/types/wizard.ts` - Added goal to WizardState
+- `src/lib/stores/wizardStore.svelte.ts` - Added goal state and setter
+- `src/lib/components/wizard/StepBasicInfo.svelte` - Goal selector
+- `src/lib/components/wizard/StepAddExercises.svelte` - Fill to Optimal button
+- `src/lib/components/wizard/StepReview.svelte` - Goal display
+- `src/routes/+page.svelte` - Onboarding modal integration
+- `src/routes/settings/+page.svelte` - Lifter level selector
+
+---
+
+### Session: User Feedback System
+
+**What was done:**
+- Created feedback page (`/feedback`) with form for bug reports and feature requests
+- Support for attaching up to 3 screenshots
+- Feedback types: Bug Report, Feature Request, General
+- Stores feedback in `user_feedback` table with Supabase Storage for images
+
+**Files created:**
+- `src/routes/feedback/+page.svelte` - Feedback form page
+- `supabase/migrations/004_feedback.sql` - Feedback table and storage
+
+---
+
 ## 2025-12-27
 
 ### Session: In-App Changelog & Roadmap
