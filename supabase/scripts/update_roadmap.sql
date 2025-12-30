@@ -17,8 +17,8 @@ DELETE FROM app_roadmap;
 
 INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
 (
-  'AI Voice Assistant',
-  'Control your workout with voice commands - log sets, swap exercises, hands-free',
+  'Additional AI Providers',
+  'Add Claude and Gemini as alternative AI providers alongside OpenAI',
   'planned',
   10
 ),
@@ -27,6 +27,12 @@ INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
   'Snap a photo of handwritten logs to digitize them',
   'planned',
   11
+),
+(
+  'PWA Install Prompt',
+  'Custom "Install App" button for easier mobile installation',
+  'planned',
+  12
 );
 
 -- ============================================================================

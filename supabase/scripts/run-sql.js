@@ -23,7 +23,8 @@ for (const file of envFiles) {
   const envPath = resolve(process.cwd(), file);
   if (existsSync(envPath)) {
     const envContent = readFileSync(envPath, 'utf-8');
-    envContent.split('\n').forEach(line => {
+    // Handle both Unix (LF) and Windows (CRLF) line endings
+    envContent.split(/\r?\n/).forEach(line => {
       const match = line.match(/^([^#=]+)=(.*)$/);
       if (match && !process.env[match[1].trim()]) {
         process.env[match[1].trim()] = match[2].trim();

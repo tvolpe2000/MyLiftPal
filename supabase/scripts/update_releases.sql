@@ -12,6 +12,24 @@
 
 INSERT INTO app_releases (version, title, released_at, highlights, changes) VALUES
 (
+  '1.9.0',
+  'AI Voice Assistant',
+  '2025-12-30T12:00:00Z',
+  ARRAY['19 Voice Tools', 'Global Assistant', 'OpenAI Integration'],
+  ARRAY[
+    'AI Voice Assistant available on ALL pages (not just workouts)',
+    '19 voice tools across 4 categories: Workout, Schedule, Block, Query',
+    'Workout: log sets, skip, swap, add exercise, complete workout, undo, clarify',
+    'Schedule: swap workout days, skip day, reschedule',
+    'Block: add/remove sets, change rep ranges, modify exercises',
+    'Query: today''s workout, weekly volume, personal records, stats, block progress',
+    'In-modal help guide with example commands',
+    'Follow-up questions without closing modal',
+    'Stale-while-revalidate prevents skeleton flash on tab switch',
+    'Uses GPT-4o-mini (~$0.15/1K requests)'
+  ]
+),
+(
   '1.8.0',
   'Theme Expansion',
   '2025-12-29T00:00:00Z',
