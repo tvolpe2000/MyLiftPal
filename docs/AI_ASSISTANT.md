@@ -4,6 +4,10 @@
 
 The AI Voice Assistant allows users to control their workout through natural voice or text commands. It uses a Tool Use / Function Calling architecture where user input is interpreted by an LLM and mapped to predefined actions.
 
+**Status:** Phase 1 Complete (Core Voice Logging)
+
+**Setup:** See `AI_SETUP.md` for configuration instructions.
+
 ---
 
 ## User Flow
@@ -368,38 +372,111 @@ See `SECURITY.md` Phase 5 for LLM security hardening:
 
 ## Implementation Phases
 
-### Phase 1: Core Voice Logging
-- FAB on workout screen
-- Browser Speech API
-- `logSet` tool only
-- Basic confirmation UI
+### Phase 1: Core Voice Logging ✅ COMPLETE
+- [x] FAB on workout screen
+- [x] Browser Speech API
+- [x] All 7 tools implemented (logSet, skipExercise, swapExercise, addExercise, completeWorkout, undoLast, clarify)
+- [x] Basic confirmation UI
+- [x] Text input fallback
+- [x] Provider-agnostic architecture
+- [x] OpenAI GPT-4o-mini integration
 
-### Phase 2: Full Control
-- Add `skipExercise`, `swapExercise`, `completeWorkout`
-- Exercise fuzzy matching for swaps
-- Undo functionality
+### Phase 2: Additional Providers
+- [ ] Add Claude adapter
+- [ ] Add Gemini adapter
+- [ ] Provider selection in Settings
+- [ ] Fallback chain (try providers in order)
 
-### Phase 3: Polish
-- Text input fallback
-- Whisper API upgrade option
-- Voice response (Text-to-Speech)
-- `addExercise` tool
+### Phase 3: Data Collection & Fine-Tuning
+- [ ] Log successful parses to database
+- [ ] Track user corrections
+- [ ] Build export for fine-tuning dataset
+- [ ] Fine-tune Llama/Mistral model
+
+### Phase 4: Self-Hosted Deployment
+- [ ] Add Ollama/vLLM adapter
+- [ ] Deploy fine-tuned model
+- [ ] Cost comparison dashboard
+
+### Phase 5: Polish
+- [ ] Whisper API upgrade option
+- [ ] Voice response (Text-to-Speech)
+- [ ] Improved undo functionality
 
 ---
 
-## File Structure (Planned)
+## File Structure (Implemented)
 
 ```
 src/
 ├── lib/
 │   ├── ai/
-│   │   ├── tools.ts           # Tool definitions
-│   │   ├── context.ts         # Build workout context for LLM
-│   │   ├── speech.ts          # Speech recognition wrapper
-│   │   └── assistant.ts       # Main assistant logic
+│   │   ├── types.ts              # TypeScript interfaces (ToolCall, WorkoutContext, AIProvider)
+│   │   ├── providerManager.ts    # Multi-provider registry and switching
+│   │   ├── assistant.ts          # Main entry point (processVoiceCommand)
+│   │   ├── context.ts            # Build workout context for LLM
+│   │   ├── providers/
+│   │   │   └── openai.ts         # OpenAI adapter (GPT-4o-mini)
+│   │   ├── tools/
+│   │   │   ├── definitions.ts    # Zod schemas, OpenAI tools, system prompt
+│   │   │   └── executor.ts       # Execute tool calls against workout store
+│   │   └── speech/
+│   │       └── webSpeech.ts      # Browser Web Speech API wrapper
 │   └── components/
 │       └── ai/
-│           ├── VoiceFAB.svelte
-│           ├── VoiceModal.svelte
-│           └── ConfirmationToast.svelte
+│           ├── VoiceFAB.svelte   # Floating microphone button
+│           └── VoiceModal.svelte # Voice input modal with states
+├── routes/
+│   └── api/
+│       └── ai/
+│           └── openai/
+│               ├── +server.ts        # POST: Parse voice transcript
+│               └── status/+server.ts # GET: Check API availability
 ```
+
+---
+
+## Provider Architecture
+
+The system supports multiple AI providers through a common interface:
+
+```typescript
+interface AIProvider {
+  name: ProviderId;
+  parseWorkoutCommand(transcript: string, context: WorkoutContext): Promise<ToolCall>;
+  isAvailable(): Promise<boolean>;
+}
+```
+
+### Current Providers
+
+| Provider | Model | Cost per 1K requests | Status |
+|----------|-------|---------------------|--------|
+| OpenAI | GPT-4o-mini | ~$0.15 | ✅ Implemented |
+| Claude | Haiku | ~$0.25 | Planned |
+| Gemini | Flash | ~$0.08 | Planned |
+| Local | Llama/Mistral 7B | ~$0.01 | Future |
+
+### Adding a New Provider
+
+1. Create adapter in `src/lib/ai/providers/`:
+```typescript
+export class NewProvider implements AIProvider {
+  name = 'new' as const;
+
+  async parseWorkoutCommand(transcript: string, context: WorkoutContext): Promise<ToolCall> {
+    // Call your API endpoint
+  }
+
+  async isAvailable(): Promise<boolean> {
+    // Check if configured
+  }
+}
+```
+
+2. Register in `src/lib/ai/assistant.ts`:
+```typescript
+aiManager.register(new NewProvider());
+```
+
+3. Create server endpoint in `src/routes/api/ai/new/+server.ts`

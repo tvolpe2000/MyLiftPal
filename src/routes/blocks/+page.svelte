@@ -44,6 +44,7 @@
 	let blocks = $state<TrainingBlock[]>([]);
 	let muscleGroups = $state<MuscleGroupData[]>([]);
 	let loading = $state(true);
+	let hasLoadedOnce = $state(false);
 	let error = $state('');
 	let deleteModal = $state<{ open: boolean; blockId: string; blockName: string; loading: boolean }>({
 		open: false,
@@ -78,7 +79,10 @@
 	async function loadBlocks() {
 		if (!auth.user) return;
 
-		loading = true;
+		// Stale-while-revalidate: Only show loading on initial load
+		if (!hasLoadedOnce) {
+			loading = true;
+		}
 		error = '';
 
 		const { data, error: fetchError } = await supabase
@@ -118,6 +122,7 @@
 		}
 
 		loading = false;
+		hasLoadedOnce = true;
 	}
 
 	// Calculate volume for a block

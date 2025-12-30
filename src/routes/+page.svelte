@@ -31,6 +31,7 @@
 	let activeBlock = $state<ActiveBlock | null>(null);
 	let recentSessions = $state<RecentSession[]>([]);
 	let loading = $state(true);
+	let hasLoadedOnce = $state(false);
 
 	// Quick stats
 	let workoutsThisWeek = $state(0);
@@ -67,7 +68,11 @@
 	async function loadHomeData() {
 		if (!auth.user) return;
 
-		loading = true;
+		// Stale-while-revalidate: Only show skeleton on initial load
+		// If we've already loaded data once, keep it visible while refetching in background
+		if (!hasLoadedOnce) {
+			loading = true;
+		}
 
 		try {
 			// Fetch active training block with target_muscles
@@ -110,6 +115,7 @@
 			console.error('Error loading home data:', error);
 		} finally {
 			loading = false;
+			hasLoadedOnce = true;
 		}
 	}
 

@@ -8,6 +8,7 @@
 
 	let exercises = $state<Exercise[]>([]);
 	let loading = $state(true);
+	let hasLoadedOnce = $state(false);
 	let searchQuery = $state('');
 	let selectedEquipment = $state<string | null>(null);
 	let selectedMuscle = $state<string | null>(null);
@@ -28,7 +29,11 @@
 	});
 
 	async function loadExercises() {
-		loading = true;
+		// Stale-while-revalidate: Only show loading on initial load
+		if (!hasLoadedOnce) {
+			loading = true;
+		}
+
 		const { data, error } = await supabase
 			.from('exercises')
 			.select('*')
@@ -40,6 +45,7 @@
 			exercises = data || [];
 		}
 		loading = false;
+		hasLoadedOnce = true;
 	}
 
 	let filteredExercises = $derived(() => {

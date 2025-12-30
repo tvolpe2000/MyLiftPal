@@ -1,4 +1,4 @@
-# MyLiftPal Roadmap
+# IronAthena Roadmap
 
 Quick reference for what's done vs what's remaining.
 
@@ -67,7 +67,29 @@ Quick reference for what's done vs what's remaining.
 - [ ] PWA installation prompt (custom "Install App" button)
 
 ### 4.3 AI & Advanced Features
-- [ ] AI Voice Assistant (FAB → voice/text chat to control workouts) - planned
+- [x] AI Voice Assistant Phase 1 - Core voice logging ✅
+  - [x] Provider-agnostic architecture (supports OpenAI, Claude, Gemini, self-hosted)
+  - [x] OpenAI GPT-4o-mini integration
+  - [x] Browser Web Speech API for transcription
+  - [x] All 7 workout tools: logSet, skipExercise, swapExercise, addExercise, completeWorkout, undoLast, clarify
+  - [x] VoiceFAB and VoiceModal components
+  - [x] Text input fallback
+- [x] AI Voice Assistant Phase 1.5 - Global Assistant ✅
+  - [x] FAB available on ALL pages (moved from workout-only to AppShell)
+  - [x] Schedule tools: swapWorkoutDays, skipDay, rescheduleDay
+  - [x] Block modification tools: addSetsToExercise, removeSetsFromExercise, changeRepRange, modifyBlockExercise
+  - [x] Query tools: getTodaysWorkout, getWeeklyVolume, getPersonalRecords, getStats, getBlockProgress
+  - [x] Unified context system (workout + global)
+  - [x] Context-aware tool selection
+- [x] AI Voice Assistant Phase 1.6 - UX Polish ✅
+  - [x] Modal stays open after response (no auto-close)
+  - [x] Follow-up questions with persistent mic button
+  - [x] In-modal help guide with example commands
+  - [x] Proper success/error state handling
+  - [x] Swap specific exercises by name (targetExercise parameter)
+  - [x] FAB positioning fix (above Complete Workout button)
+- [ ] AI Voice Assistant Phase 2 - Additional providers (Claude, Gemini)
+- [ ] AI Voice Assistant Phase 3 - Data collection for fine-tuning
 - [ ] Photo import (OCR for handwritten logs)
 
 ### 4.4 Launch Prep (After features stable)
@@ -75,32 +97,56 @@ Quick reference for what's done vs what's remaining.
 - [ ] Beta testing with real users
 - [ ] Bug fixes from beta feedback
 
-### AI Voice Assistant Details
+### AI Voice Assistant Details ✅ IMPLEMENTED
 
-**Entry Point:** Floating Action Button (FAB) during workout
-- Tap → Voice mode (uses Browser Speech API, upgrade to Whisper if needed)
-- Long press or secondary button → Text input mode
+**Entry Point:** Floating Action Button (FAB) on ALL authenticated pages
+- Tap → Voice mode (uses Browser Speech API)
+- "Type instead" button → Text input fallback
+- Available globally, not just during workouts
 
-**Architecture:** Tool Use / Function Calling
-- Send transcription + workout context to LLM (Claude/GPT)
-- LLM returns structured tool call
-- App executes action and speaks/shows confirmation
+**Architecture:** Provider-Agnostic Tool Use / Function Calling
+```
+User Speech → Web Speech API → Transcript
+                    ↓
+Transcript + Unified Context → AI Provider (OpenAI/Claude/Gemini/Local)
+                    ↓
+Tool Call → Category Executor → Store Actions
+                    ↓
+Feedback Message → User
+```
 
-**Supported Actions:**
-| Action | Example Input |
-|--------|---------------|
-| Log set | "185 for 8, felt easy, 2 in the tank" |
-| Skip exercise | "Skip triceps, elbow is bothering me" |
-| Swap exercise | "Swap this for dumbbell press" |
-| Complete workout | "I'm done for today" |
-| Add exercise | "Add some calf raises, 3 sets" |
-| Undo last | "Undo that" / "Wait, that was 8 not 6" |
+**Tool Categories (19 Total Tools):**
 
-**Technical Approach:**
-1. Browser Web Speech API for transcription (free, MVP)
-2. Whisper API upgrade path if accuracy insufficient
-3. Single LLM API call with tool definitions
-4. No custom agents or MCP required
+| Category | Tools | Available When |
+|----------|-------|----------------|
+| Workout (7) | logSet, skipExercise, swapExercise, completeWorkout, addExercise, undoLast, clarify | In active workout |
+| Schedule (3) | swapWorkoutDays, skipDay, rescheduleDay | Has training block |
+| Block (4) | addSetsToExercise, removeSetsFromExercise, changeRepRange, modifyBlockExercise | Has training block |
+| Query (5) | getTodaysWorkout, getWeeklyVolume, getPersonalRecords, getStats, getBlockProgress | Always |
+
+**Example Commands:**
+| Context | Example | Tool |
+|---------|---------|------|
+| Workout | "185 for 8, 2 in reserve" | logSet |
+| Global | "What's my workout today?" | getTodaysWorkout |
+| Global | "Swap today with tomorrow" | swapWorkoutDays |
+| Global | "Add a set to bench press" | addSetsToExercise |
+| Global | "Show me my PRs" | getPersonalRecords |
+
+**Implementation:**
+- `src/lib/ai/` - Core AI module with types, providers, tools
+- `src/lib/ai/globalAssistant.ts` - Global entry point
+- `src/lib/ai/context/` - Unified context builder
+- `src/lib/ai/tools/` - Tool definitions and executors
+- `src/lib/stores/trainingBlockStore.svelte.ts` - Global block data access
+- `src/lib/components/AppShell.svelte` - Global FAB placement
+- `src/routes/api/ai/global/` - Server-side global endpoint
+- See `docs/AI_ASSISTANT.md` for full architecture
+- See `docs/AI_SETUP.md` for configuration
+
+**Current Provider:** OpenAI GPT-4o-mini (~$0.15/1K requests)
+
+**Future Providers:** Claude Haiku, Gemini Flash, Self-hosted Llama/Mistral
 
 ---
 
@@ -271,6 +317,12 @@ From `npm audit` (4 low severity):
 
 | Date | Feature |
 |------|---------|
+| 2025-12-30 | AI Voice Assistant Phase 1.6 - UX polish (persistent modal, help guide, follow-ups) |
+| 2025-12-30 | Stale-while-revalidate pattern - Fix skeleton flash on tab switch |
+| 2025-12-30 | AI technical documentation (AI_FLOW.md) |
+| 2025-12-29 | AI Voice Assistant Phase 1.5 - Global assistant on all pages with 19 tools |
+| 2025-12-29 | AI Voice Assistant Phase 1 - Provider-agnostic voice logging with OpenAI |
+| 2025-12-28 | Theme expansion - Added Amber, Violet, Zinc themes (8 → 11 total) |
 | 2025-12-28 | Home page redesign - Quick Stats, Weekly Volume, Personal Records, target muscle chips |
 | 2025-12-28 | Application stability fixes - auth token refresh, error boundaries, PWA updates |
 | 2025-12-28 | Fill to Optimal volume calculation fix - unified formulas with volume bars |
@@ -299,4 +351,4 @@ From `npm audit` (4 low severity):
 
 ---
 
-*Last updated: 2025-12-28 (v1.7.0 Home page redesign - Quick Stats, Weekly Volume, Personal Records)*
+*Last updated: 2025-12-30 (AI Voice Assistant Phase 1.6 - UX polish, help guide, stale-while-revalidate)*

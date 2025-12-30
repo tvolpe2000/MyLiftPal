@@ -4,6 +4,85 @@ Chronological notes on development progress, sessions, and learnings.
 
 ---
 
+## 2025-12-29
+
+### Session: AI Voice Assistant Implementation (Phase 1)
+
+**What was done:**
+- Implemented provider-agnostic AI voice logging architecture:
+  - `AIProvider` interface that works with Claude, OpenAI, Gemini, or self-hosted models
+  - Provider manager for registering and switching between providers
+  - First provider: OpenAI (GPT-4o-mini for cost efficiency)
+- Created AI types and tool definitions:
+  - TypeScript interfaces for WorkoutContext, ToolCall, AI providers
+  - Zod schemas for parameter validation (logSet, skipExercise, swapExercise, etc.)
+  - OpenAI function calling tool definitions
+  - System prompt optimized for workout command parsing
+- Built speech recognition layer:
+  - Web Speech API wrapper for free browser-native recognition
+  - Handles microphone permissions, interim results, errors
+- Created voice UI components:
+  - `VoiceFAB.svelte` - Floating action button on workout screen
+  - `VoiceModal.svelte` - Full voice input modal with listening/processing states
+  - Text input fallback for browsers without speech support
+- Implemented tool executor:
+  - Executes parsed tool calls against workout store
+  - Handles logSet, skipExercise, swapExercise, addExercise, completeWorkout
+  - Response templates for user feedback
+- Wired up to workout screen:
+  - Voice FAB appears on `/blocks/[id]` workout tracking page
+  - Hidden in edit mode (past sessions)
+  - Full flow: tap FAB → speak → AI parses → tool executes → feedback
+
+**Technical decisions:**
+- OpenAI GPT-4o-mini chosen for best cost/performance ratio ($0.15/1K requests)
+- Dynamic env imports (`$env/dynamic/private`) to allow builds without API key
+- Tool executor uses existing workout store methods (quickLogSet, swapExercise, etc.)
+- Web Speech API first (free), with Whisper API as future upgrade path
+- Lazy OpenAI client initialization to handle missing API keys gracefully
+
+**Architecture (future-proofed):**
+```
+User Speech → Web Speech API → Transcript
+    ↓
+Transcript + Context → AI Provider (OpenAI/Claude/Gemini/Local)
+    ↓
+Tool Call → Executor → Workout Store Actions
+    ↓
+Feedback Message → User
+```
+
+**Files created:**
+- `src/lib/ai/types.ts` - AI type definitions
+- `src/lib/ai/providerManager.ts` - Provider registry and switching
+- `src/lib/ai/context.ts` - Workout context builder
+- `src/lib/ai/assistant.ts` - Main voice assistant entry point
+- `src/lib/ai/providers/openai.ts` - OpenAI adapter
+- `src/lib/ai/tools/definitions.ts` - Tool schemas and system prompt
+- `src/lib/ai/tools/executor.ts` - Tool execution logic
+- `src/lib/ai/speech/webSpeech.ts` - Browser speech recognition wrapper
+- `src/lib/components/ai/VoiceFAB.svelte` - Voice input FAB
+- `src/lib/components/ai/VoiceModal.svelte` - Voice input modal
+- `src/routes/api/ai/openai/+server.ts` - OpenAI API endpoint
+- `src/routes/api/ai/openai/status/+server.ts` - API status check
+
+**Files modified:**
+- `src/routes/blocks/[id]/+page.svelte` - Integrated voice components
+- `package.json` - Added openai and zod dependencies
+
+**Environment setup required:**
+```env
+OPENAI_API_KEY=sk-... # Add to .env for voice features
+```
+
+**Next steps (Phase 2):**
+- Add Claude and Gemini adapters
+- Implement undo functionality
+- Add data logging for future fine-tuning
+- Provider selection in Settings
+
+---
+
 ## 2025-12-28
 
 ### Session: Theme Expansion & Contrast Fix
