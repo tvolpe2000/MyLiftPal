@@ -15,13 +15,22 @@
 	let showVoiceModal = $state(false);
 	let aiAvailable = $state(false);
 
-	// Check if AI is available on mount
-	onMount(async () => {
-		aiAvailable = await isGlobalAssistantAvailable();
+	// Check if AI is available on mount (non-blocking)
+	onMount(() => {
+		// Run these checks asynchronously without blocking the UI
+		isGlobalAssistantAvailable()
+			.then((available) => {
+				aiAvailable = available;
+			})
+			.catch(() => {
+				aiAvailable = false;
+			});
 
 		// Load training block store for AI context
 		if (auth.isAuthenticated) {
-			await trainingBlockStore.loadActiveBlock();
+			trainingBlockStore.loadActiveBlock().catch((err) => {
+				console.error('Failed to load training block:', err);
+			});
 		}
 	});
 
