@@ -27,12 +27,6 @@ INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
   'Snap a photo of handwritten logs to digitize them',
   'planned',
   11
-),
-(
-  'PWA Install Prompt',
-  'Custom "Install App" button for easier mobile installation',
-  'planned',
-  12
 );
 
 -- ============================================================================

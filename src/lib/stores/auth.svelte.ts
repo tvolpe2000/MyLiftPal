@@ -1,6 +1,10 @@
 import { supabase } from '$lib/db/supabase';
+import { browser } from '$app/environment';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Profile } from '$lib/types';
+
+const PROFILE_CACHE_KEY = 'myliftpal_cached_profile';
+const AUTH_INIT_TIMEOUT_MS = 5000; // 5 second timeout for auth initialization
 
 interface AuthState {
 	user: User | null;
@@ -8,18 +12,90 @@ interface AuthState {
 	profile: Profile | null;
 	loading: boolean;
 	initialized: boolean;
+	hasCachedSession: boolean; // True if we have cached data (can show UI immediately)
+}
+
+/**
+ * Check if Supabase has a cached session in localStorage
+ */
+function hasSupabaseSession(): boolean {
+	if (!browser) return false;
+	try {
+		// Supabase stores session with key pattern: sb-<ref>-auth-token
+		const keys = Object.keys(localStorage);
+		return keys.some(key => key.includes('supabase') && key.includes('auth'));
+	} catch {
+		return false;
+	}
 }
 
 function createAuthStore() {
+	// Check for cached data immediately (synchronous, before any async)
+	const cachedProfile = browser ? (() => {
+		try {
+			const cached = localStorage.getItem(PROFILE_CACHE_KEY);
+			return cached ? JSON.parse(cached) as Profile : null;
+		} catch { return null; }
+	})() : null;
+
+	const hasCached = !!(cachedProfile || hasSupabaseSession());
+
 	let state = $state<AuthState>({
 		user: null,
 		session: null,
-		profile: null,
+		profile: cachedProfile, // Load cached profile immediately
 		loading: true,
-		initialized: false
+		initialized: false,
+		hasCachedSession: hasCached
 	});
 
+	/**
+	 * Load cached profile from localStorage (for offline support)
+	 */
+	function loadCachedProfile(): Profile | null {
+		if (!browser) return null;
+		try {
+			const cached = localStorage.getItem(PROFILE_CACHE_KEY);
+			if (cached) {
+				return JSON.parse(cached) as Profile;
+			}
+		} catch (error) {
+			console.error('Error loading cached profile:', error);
+		}
+		return null;
+	}
+
+	/**
+	 * Save profile to localStorage (for offline support)
+	 */
+	function cacheProfile(profile: Profile | null) {
+		if (!browser) return;
+		try {
+			if (profile) {
+				localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile));
+			} else {
+				localStorage.removeItem(PROFILE_CACHE_KEY);
+			}
+		} catch (error) {
+			console.error('Error caching profile:', error);
+		}
+	}
+
 	async function initialize() {
+		// Profile already loaded from cache at store creation time
+		if (state.profile) {
+			console.log('[MyLiftPal Auth] Using cached profile for instant display');
+		}
+
+		// Set up a timeout to ensure we don't hang forever on spotty connections
+		const timeoutId = setTimeout(() => {
+			if (!state.initialized) {
+				console.log('[MyLiftPal Auth] Auth initialization timed out - using cached state');
+				state.loading = false;
+				state.initialized = true;
+			}
+		}, AUTH_INIT_TIMEOUT_MS);
+
 		try {
 			const { data: { session } } = await supabase.auth.getSession();
 
@@ -27,10 +103,18 @@ function createAuthStore() {
 				state.user = session.user;
 				state.session = session;
 				await fetchProfile(session.user.id);
+			} else if (!navigator.onLine && state.hasCachedSession) {
+				// Offline and have cached data - user stays "logged in" with cached profile
+				console.log('[MyLiftPal Auth] Offline with cached session - using cached auth state');
 			}
 		} catch (error) {
 			console.error('Auth initialization error:', error);
+			// Keep using cached profile as fallback
+			if (state.hasCachedSession) {
+				console.log('[MyLiftPal Auth] Using cached state after initialization error');
+			}
 		} finally {
+			clearTimeout(timeoutId);
 			state.loading = false;
 			state.initialized = true;
 		}
@@ -57,6 +141,7 @@ function createAuthStore() {
 					state.session = null;
 					state.user = null;
 					state.profile = null;
+					cacheProfile(null);
 					return;
 				}
 
@@ -77,18 +162,28 @@ function createAuthStore() {
 	}
 
 	async function fetchProfile(userId: string) {
-		const { data, error } = await supabase
-			.from('profiles')
-			.select('*')
-			.eq('id', userId)
-			.single();
+		try {
+			const { data, error } = await supabase
+				.from('profiles')
+				.select('*')
+				.eq('id', userId)
+				.single();
 
-		if (error) {
+			if (error) {
+				console.error('Error fetching profile:', error);
+				// Keep using cached profile if available
+				return;
+			}
+
+			if (data) {
+				state.profile = data;
+				// Cache for offline access
+				cacheProfile(data);
+			}
+		} catch (error) {
 			console.error('Error fetching profile:', error);
-			return;
+			// Keep using cached profile if available
 		}
-
-		state.profile = data;
 	}
 
 	async function signUp(email: string, password: string, displayName?: string) {
@@ -134,6 +229,8 @@ function createAuthStore() {
 		state.user = null;
 		state.session = null;
 		state.profile = null;
+		// Clear cached profile on sign out
+		cacheProfile(null);
 
 		if (error) throw error;
 	}
@@ -160,7 +257,10 @@ function createAuthStore() {
 		get profile() { return state.profile; },
 		get loading() { return state.loading; },
 		get initialized() { return state.initialized; },
-		get isAuthenticated() { return !!state.user; },
+		// Consider authenticated if we have a user OR if we have cached session (for offline)
+		get isAuthenticated() { return !!state.user || (state.hasCachedSession && !!state.profile); },
+		// True if we have cached data and can show UI immediately (even before network confirms auth)
+		get hasCachedSession() { return state.hasCachedSession; },
 		initialize,
 		signUp,
 		signIn,

@@ -64,7 +64,7 @@ Quick reference for what's done vs what's remaining.
 - [x] Lifter level profiles (Beginner, Intermediate, Advanced) with onboarding ✅
 - [x] Home page redesign (Quick Stats, Weekly Volume, Personal Records) ✅
 - [ ] Additional themes (in progress)
-- [ ] PWA installation prompt (custom "Install App" button)
+- [x] PWA installation prompt (custom "Install App" button) ✅
 
 ### 4.3 AI & Advanced Features
 - [x] AI Voice Assistant Phase 1 - Core voice logging ✅
@@ -88,8 +88,10 @@ Quick reference for what's done vs what's remaining.
   - [x] Proper success/error state handling
   - [x] Swap specific exercises by name (targetExercise parameter)
   - [x] FAB positioning fix (above Complete Workout button)
-- [ ] AI Voice Assistant Phase 2 - Additional providers (Claude, Gemini)
-- [ ] AI Voice Assistant Phase 3 - Data collection for fine-tuning
+- [ ] AI Voice Assistant Phase 1.7 - Bug fixes & missing tools (see details below)
+- [ ] AI Voice Assistant Phase 2 - Text-to-Speech responses (see details below)
+- [ ] AI Voice Assistant Phase 3 - Additional providers (Claude, Gemini)
+- [ ] AI Voice Assistant Phase 4 - Data collection for fine-tuning
 - [ ] Photo import (OCR for handwritten logs)
 
 ### 4.4 Launch Prep (After features stable)
@@ -148,6 +150,213 @@ Feedback Message → User
 
 **Future Providers:** Claude Haiku, Gemini Flash, Self-hosted Llama/Mistral
 
+### AI Voice Assistant Phase 1.7: Bug Fixes & Missing Tools
+
+**Known Issues:**
+
+1. **Training block context is null** - When user has a block, context shows `trainingBlock: null`
+   - Root cause: `trainingBlockStore` not being populated on global requests
+   - Fix: Ensure store is hydrated before building AI context
+
+2. **Wrong tool selection** - AI picks query tools when modification tools are needed
+   - Example: "Add a chest day" → AI picks `getBlockProgress` instead of (missing) `addWorkoutDay`
+   - Fix: Better system prompt guidance + add missing tools
+
+3. **Missing day-level tools** - Can't add/remove/duplicate workout days
+   - Current tools only modify exercises within existing days
+
+**Missing Tools to Add:**
+
+| Tool | Description | Example Command |
+|------|-------------|-----------------|
+| `logMultipleSets` | Log multiple sets at once | "225 for 10 then 8 each after" |
+| `addWorkoutDay` | Add a new day to training block | "Add another chest day" |
+| `removeWorkoutDay` | Remove a day from block | "Remove leg day" |
+| `duplicateWorkoutDay` | Copy an existing day | "Duplicate push day" |
+| `renameWorkoutDay` | Rename a day | "Rename day 3 to Pull B" |
+| `addExerciseToDay` | Add exercise to specific day (not workout) | "Add curls to arm day" |
+| `removeExerciseFromDay` | Remove exercise from day | "Remove lunges from leg day" |
+
+**`logMultipleSets` Tool Design:**
+```typescript
+// "225 for 10 then 8 each after that" (4 sets total, context says 4 sets)
+{
+  tool: "logMultipleSets",
+  parameters: {
+    sets: [
+      { weight: 225, reps: 10 },
+      { weight: 225, reps: 8 },
+      { weight: 225, reps: 8 },
+      { weight: 225, reps: 8 }
+    ]
+  }
+}
+
+// "135, 185, 225, 245 for 5 each"
+{
+  tool: "logMultipleSets",
+  parameters: {
+    sets: [
+      { weight: 135, reps: 5 },
+      { weight: 185, reps: 5 },
+      { weight: 225, reps: 5 },
+      { weight: 245, reps: 5 }
+    ]
+  }
+}
+```
+
+**Current Tools (19):**
+- Workout (7): logSet, skipExercise, swapExercise, completeWorkout, addExercise, undoLast, clarify
+- Schedule (3): swapWorkoutDays, skipDay, rescheduleDay
+- Block (4): addSetsToExercise, removeSetsFromExercise, changeRepRange, modifyBlockExercise
+- Query (5): getTodaysWorkout, getWeeklyVolume, getPersonalRecords, getStats, getBlockProgress
+
+**After Phase 1.7 (27 tools):**
+- Workout (8): existing 7 + logMultipleSets
+- Schedule (3): unchanged
+- Block (10): existing 4 + addWorkoutDay, removeWorkoutDay, duplicateWorkoutDay, renameWorkoutDay, addExerciseToDay, removeExerciseFromDay
+- Query (5): unchanged
+
+**Implementation Tasks:**
+- [ ] Fix training block context hydration bug
+- [ ] Add `logMultipleSets` tool + executor (batch set logging)
+- [ ] Add `addWorkoutDay` tool + executor
+- [ ] Add `removeWorkoutDay` tool + executor
+- [ ] Add `duplicateWorkoutDay` tool + executor
+- [ ] Add `renameWorkoutDay` tool + executor
+- [ ] Add `addExerciseToDay` tool + executor
+- [ ] Add `removeExerciseFromDay` tool + executor
+- [ ] Improve system prompt to distinguish query vs modification intents
+- [ ] Add more example commands to tool descriptions
+- [ ] Test with common user commands
+
+---
+
+### AI Voice Assistant Phase 2: Text-to-Speech (TTS) Responses
+
+**Goal**: AI speaks responses aloud for true hands-free operation during workouts.
+
+**User Flow**:
+1. User speaks: "185 for 8, 2 in reserve"
+2. AI processes and logs the set
+3. AI speaks back: "Got it. Set 2 logged: 185 pounds, 8 reps, 2 RIR."
+
+#### TTS Technology Options
+
+| Provider | Cost | Quality | Latency | Notes |
+|----------|------|---------|---------|-------|
+| **Browser SpeechSynthesis** | FREE | Basic/Robotic | Instant | Built-in, no API needed, works offline |
+| **OpenAI TTS** | $15/1M chars | High | ~0.5s | We already use OpenAI, 6 voices |
+| **OpenAI TTS HD** | $30/1M chars | Very High | ~1s | Best OpenAI quality |
+| **Google Cloud TTS** | $4-16/1M chars | High | ~0.3s | WaveNet voices, generous free tier |
+| **ElevenLabs** | ~$180/1M chars | Premium | ~0.5s | Best quality, overkill for this use case |
+
+#### Recommended Approach
+
+**Phase 2a: Browser SpeechSynthesis (Free, Immediate)**
+- Use browser's built-in `window.speechSynthesis` API
+- No additional cost or API calls
+- Quality is "good enough" for short confirmations
+- Works offline
+- Cross-browser library: [EasySpeech](https://github.com/leaonline/easy-speech)
+
+```typescript
+// Simple implementation
+const utterance = new SpeechSynthesisUtterance("Set logged: 185 for 8");
+utterance.rate = 1.1; // Slightly faster
+utterance.pitch = 1.0;
+speechSynthesis.speak(utterance);
+```
+
+**Phase 2b: Self-Hosted TTS (Recommended for Own Server)**
+
+If running your own AI server, self-hosted TTS can match or **beat** commercial options:
+
+| Model | Size | Hardware | Speed | Quality | License |
+|-------|------|----------|-------|---------|---------|
+| **Kokoro-82M** | 82M params | CPU or GPU | <0.3s | High | Apache 2.0 ✅ |
+| **Chatterbox** | 500M params | GPU 8GB+ | <0.2s | **Beats ElevenLabs** | MIT ✅ |
+| **Chatterbox-Turbo** | 350M params | GPU 6GB+ | Faster | High | MIT ✅ |
+| **Piper** | Varies | CPU/RPi | Very fast | Good | MIT ✅ |
+| **XTTS-v2** | 467M params | GPU 8GB+ | ~1s | High + Cloning | Non-commercial ⚠️ |
+| **Tortoise** | Large | GPU 12GB+ | Minutes | Best | Apache 2.0 ✅ |
+
+**Top Recommendations:**
+
+1. **Kokoro-82M** - Best for CPU-only servers
+   - 82M parameters = runs on anything
+   - <0.3s inference even on CPU
+   - Apache 2.0 = commercial OK
+   - [Kokoro-FastAPI](https://github.com/remsky/Kokoro-FastAPI) - Docker + OpenAI-compatible endpoint
+   - Market rate: <$1/1M characters (essentially free self-hosted)
+
+2. **Chatterbox** - Best quality (if you have GPU)
+   - Beat ElevenLabs in 63.8% of blind tests
+   - 23 languages, emotion control, voice cloning
+   - Needs ~8GB VRAM (RTX 3060 Ti or better)
+   - [Chatterbox-TTS-Server](https://github.com/devnen/Chatterbox-TTS-Server) - Self-host with OpenAI-compatible API
+   - Sub-200ms latency on GPU
+
+3. **Piper** - Best for edge/embedded
+   - Optimized for Raspberry Pi 4
+   - ONNX models, very fast
+   - Great for offline/privacy-first
+
+**Self-Hosted Architecture:**
+```
+Your Server (with GPU)
+├── LLM (Llama/Mistral) → Process voice command
+├── TTS (Chatterbox/Kokoro) → Generate speech response
+└── Single API endpoint for MyLiftPal
+
+MyLiftPal App
+├── Send transcript → Server
+├── Receive: { action: "logSet", speech_url: "/audio/response.mp3" }
+└── Play audio
+```
+
+**Phase 2c: OpenAI TTS (Cloud Fallback)**
+- For users without self-hosted server
+- Setting toggle: "Use premium voice" (off by default)
+- Estimated cost: ~$0.001 per response (avg 50 chars)
+- Cost: $1.50/month per active user (at $15/1M chars)
+
+#### Implementation Files
+
+```
+src/lib/ai/speech/
+├── webSpeech.ts          # Existing - speech recognition
+├── synthesis.ts          # NEW - browser TTS wrapper
+└── openaiTTS.ts          # NEW - OpenAI TTS client (optional)
+
+src/routes/api/ai/
+└── tts/+server.ts        # NEW - OpenAI TTS endpoint (optional)
+```
+
+#### Settings to Add
+
+- [ ] Enable voice responses (on/off toggle)
+- [ ] Voice selection (browser voices dropdown)
+- [ ] Speech rate (0.5x - 2x slider)
+- [ ] Premium voice toggle (uses OpenAI TTS, shows cost warning)
+
+#### Sources
+- [Web Speech API - MDN](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
+- [SpeechSynthesis - MDN](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis)
+- [OpenAI TTS Pricing](https://platform.openai.com/docs/pricing)
+- [EasySpeech Library](https://github.com/leaonline/easy-speech)
+- [Google Cloud TTS Pricing](https://cloud.google.com/text-to-speech/pricing)
+
+**Self-Hosted TTS:**
+- [Chatterbox TTS](https://github.com/resemble-ai/chatterbox) - State-of-the-art open-source TTS
+- [Chatterbox-TTS-Server](https://github.com/devnen/Chatterbox-TTS-Server) - Self-hosted with OpenAI-compatible API
+- [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) - Tiny model, runs on CPU
+- [Kokoro-FastAPI](https://github.com/remsky/Kokoro-FastAPI) - Docker wrapper with OpenAI endpoint
+- [Piper TTS](https://github.com/rhasspy/piper) - Fast local TTS for Raspberry Pi
+- [Coqui TTS](https://github.com/coqui-ai/TTS) - Deep learning TTS toolkit
+- [Best Open-Source TTS Models Compared](https://www.inferless.com/learn/comparing-different-text-to-speech---tts--models-part-2)
+
 ---
 
 ## Phase 5: LLM Security Hardening
@@ -190,19 +399,153 @@ LLM integrations that can modify user data require specific security measures.
 
 ---
 
+## Phase 5: Competitor Parity & Enhanced Features
+
+Based on competitor analysis (Alpha Progress app), prioritized by impact.
+
+### 5.1 Exercise Content (Critical Gap)
+
+**Problem**: Our exercise library lacks visual content. Competitor has 795+ exercises with photos and videos.
+
+- [ ] Exercise thumbnails/photos - Static images showing exercise position
+- [ ] Exercise instruction videos - Video demonstrations with playback
+- [ ] Written exercise instructions - Setup, Execution, Tips text
+- [ ] Expanded exercise database - Need to source data (ExRx.net API? Open-source dataset? Manual creation?)
+
+**Data Source Options to Research:**
+1. ExRx.net - Comprehensive but may have licensing restrictions
+2. Wger API (wger.de) - Open source workout manager with exercise data
+3. MuscleWiki - Has exercise database
+4. Manual creation with AI-generated descriptions + stock/licensed videos
+5. Partner with fitness content creators
+
+### 5.2 Workout Logging UX Improvements
+
+- [ ] **Hybrid scroll wheel + numpad input** (see competitor reference)
+  - Combines scroll wheel (for browsing) with numpad (for direct entry) in ONE view
+  - User can scroll to approximate weight, then tap numbers to adjust
+  - Eliminates need for separate "Numpad" vs "Scroll wheel" setting
+  - Reference: Alpha Progress weight picker (IMG_5633)
+
+- [ ] **Rest timer** with countdown, alarm/vibrate, +/- adjustment
+  - Auto-start after completing a set
+  - Configurable default rest time per exercise type
+  - Continue to next exercise option
+  - Note: Lower priority for hypertrophy (user preference), higher for strength
+
+- [ ] **Dropsets support**
+  - Mark sets as dropsets (+2 indicator style)
+  - Time-saver for high-volume training
+  - Track weight drop percentage
+
+- [ ] **Supersets support**
+  - Pair exercises together
+  - Significant time-saver
+  - Single rest period after superset completion
+
+### 5.3 Smart Program Generation (Wizard Enhancement)
+
+**Concept**: Streamlined wizard that auto-selects templates based on user criteria.
+
+**User Flow:**
+1. "How long do you want to run this block?" → 4-12 weeks slider
+2. "Focus any muscle groups?" → Optional muscle selector (Chest, Back, etc.)
+3. "How many days per week?" → 3-6 days (suggest minimum 3)
+4. System finds templates matching criteria by percentage fit
+5. Present top 3 matches with explanation of why they fit
+
+**Implementation:**
+- [ ] Add `focusMuscles` metadata to template data (e.g., PPL = balanced, Arnold Split = chest/arms bias)
+- [ ] Template matching algorithm (days match, goal match, focus muscle overlap)
+- [ ] "Smart Recommendations" step in wizard before template picker
+- [ ] Show match percentage and reasoning ("This template hits chest 2x/week")
+
+### 5.4 Progress Dashboards & Charts
+
+**Problem**: No visual progress tracking. Competitor has charts per exercise.
+
+- [ ] Exercise history chart (weight over time)
+- [ ] Volume per muscle chart (weekly/monthly trends)
+- [ ] 1RM/10RM estimated max calculation and tracking
+- [ ] Personal records page with historical progression
+- [ ] Stats dashboard: total volume lifted, workout streak, consistency %
+
+### 5.5 Equipment & Gym Configuration
+
+**Concept**: Configure available equipment to filter exercises appropriately.
+
+- [ ] Equipment profile setup (what's available at your gym)
+- [ ] Weight increment configuration per equipment type
+  - Barbell: 45 lb bar, 2.5 lb increments
+  - Dumbbells: 5 lb increments
+  - Cable: 5 lb or 10 lb increments
+  - Machine: varies by machine
+- [ ] Filter exercises by available equipment
+- [ ] (Future) Multiple gym profiles if user trains at different locations
+
+### 5.6 Template Muscle Focus Filtering
+
+**Concept**: Filter templates by muscle group emphasis.
+
+- [ ] Add `muscleBias` field to templates:
+  ```typescript
+  {
+    name: "Push Pull Legs",
+    muscleBias: { chest: "balanced", back: "balanced", legs: "high" },
+    // or simpler: focusMuscles: ["legs"]
+  }
+  ```
+- [ ] Template picker filter: "Focus: Chest" shows chest-biased templates
+- [ ] Visual indicator showing template's muscle emphasis
+
+---
+
 ## Backlog / Nice-to-Have
 
 Lower priority items - implement after launch or as time permits:
 
-- [ ] Rest timer with notifications (lowest priority per user feedback)
 - [ ] Duplicate training block
-- [ ] Social features (share workouts, follow friends, leaderboards) - tracked
 - [ ] Export data (CSV/JSON)
-- [ ] Exercise video links
-- [ ] Superset time optimization
-- [ ] Workout notes/journaling
-- [ ] Stats/analytics dashboard
+
+### Social & Sharing Features (Future Phase)
+
+**Core Concept**: Enable friends to train together and share progress.
+
+**Share Content:**
+- [ ] Share workout summary (post-workout card with exercises, volume, PRs hit)
+- [ ] Share personal records ("Just hit 225 on bench!")
+- [ ] Share weekly/monthly stats
+
+**Template Sharing (Key Feature):**
+- [ ] Publish your training block as a shareable template
+  - "Hey Todd, let's run this training block together"
+  - Generate shareable link or code
+  - Friend can import and start the same program
+- [ ] Save someone else's shared template to your library
+- [ ] Template visibility: Private (default) / Friends / Public
+- [ ] User-created template gallery (browse community templates)
+
+**Use Case**: Your son builds a program and shares it with his buddies so they can all run the same block together.
+
+**Community (Lower Priority):**
+- [ ] Facebook group integration
+- [ ] Reddit community link
+
+---
+
+### Other Backlog Items
+
+- [ ] Workout notes/journaling per exercise
 - [ ] Deload week auto-generation
+- [ ] Warm-up set suggestions (lower priority for hypertrophy focus)
+  - Auto-calculate warm-up weights based on working weight
+  - Adjustable based on experience level
+- [ ] Body weight tracking (for bodyweight exercise calculations)
+- [ ] Gender selection (may affect volume recommendations)
+- [ ] Calendar view on home page (week view showing planned workouts)
+- [ ] Apple Health / Health Connect integration
+- [ ] Achievements/Trophies/Streaks (gamification)
+- [ ] Searchable in-app FAQ/Help system
 
 ## Completed
 
@@ -317,6 +660,9 @@ From `npm audit` (4 low severity):
 
 | Date | Feature |
 |------|---------|
+| 2025-12-30 | AI Voice Phase 1.7 planning - documented bugs, missing tools (6 new day-level tools) |
+| 2025-12-30 | AI Voice Phase 2 TTS research - documented self-hosted options (Chatterbox, Kokoro) |
+| 2025-12-30 | Competitor analysis (Alpha Progress) - documented feature gaps in Phase 5 |
 | 2025-12-30 | AI Voice Assistant Phase 1.6 - UX polish (persistent modal, help guide, follow-ups) |
 | 2025-12-30 | Stale-while-revalidate pattern - Fix skeleton flash on tab switch |
 | 2025-12-30 | AI technical documentation (AI_FLOW.md) |
@@ -351,4 +697,35 @@ From `npm audit` (4 low severity):
 
 ---
 
-*Last updated: 2025-12-30 (AI Voice Assistant Phase 1.6 - UX polish, help guide, stale-while-revalidate)*
+## Competitor Analysis Reference
+
+**App Analyzed**: Alpha Progress (iOS App Store)
+**Screenshots Location**: `Screenshots of Alpha Progress/` (53 images across 4 folders)
+**Analysis Date**: 2025-12-30
+
+### Key Competitor Features Noted:
+
+| Feature | Their Implementation | Our Approach |
+|---------|---------------------|--------------|
+| Weight input | Scroll wheel + numpad combined | Currently separate modes - should unify |
+| Experience levels | 5 tiers (Beginner → Elite) | 3 tiers: Beginner (0-2 yrs), Intermediate (2-5 yrs), Advanced (5+ yrs) |
+| Training duration | Short/Medium/Long presets | Minutes input (more precise, keep ours) |
+| Split selection | Manual or "Automatic" | Templates (better - more control) |
+| Exercise library | 795+ with photos/videos | ~100 text-only (critical gap) |
+| Muscle focus | Focus/Neglect per muscle | Tie to templates (smart filtering) |
+| Dropsets | +N indicator on sets | Not implemented (needed) |
+| Supersets | Pair exercises | Not implemented (time-saver) |
+| Rest timer | Countdown with +/- adjust | Not implemented |
+| Warm-ups | Auto-generate based on working weight | Not priority for hypertrophy |
+| Charts | Per-exercise history graphs | Not implemented (high demand) |
+| FAQ | Extensive searchable help | Not implemented |
+
+### Our Unique Advantages:
+- AI Voice Assistant (19 tools, hands-free logging)
+- Transparent volume tracking (MV/MEV/MAV/MRV landmarks)
+- Fill to Optimal algorithm
+- Free tier (they paywall key features at $80/year)
+
+---
+
+*Last updated: 2025-12-30 (Competitor analysis - Phase 5 features documented)*

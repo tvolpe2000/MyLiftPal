@@ -12,6 +12,20 @@
 
 INSERT INTO app_releases (version, title, released_at, highlights, changes) VALUES
 (
+  '1.9.1',
+  'Offline Mode Bugfix',
+  '2025-12-30T18:00:00Z',
+  ARRAY['True Offline-First', 'PWA Install Prompt', 'Faster Loading'],
+  ARRAY[
+    'App now loads instantly from cache (like RP Hypertrophy)',
+    'PWA install prompt encourages "Add to Home Screen" for better persistence',
+    'Auth timeout prevents hanging on spotty connections',
+    'Profile cached to localStorage for offline access',
+    'Non-blocking layout shows content immediately',
+    'Cleaned up debug console logging'
+  ]
+),
+(
   '1.9.0',
   'AI Voice Assistant',
   '2025-12-30T12:00:00Z',

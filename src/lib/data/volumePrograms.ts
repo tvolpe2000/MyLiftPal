@@ -339,19 +339,19 @@ export const LIFTER_LEVELS: LevelInfo[] = [
 	{
 		value: 'beginner',
 		label: 'Beginner',
-		description: 'Less than 1 year of consistent training',
+		description: '0-2 years of consistent training',
 		emoji: '🌱'
 	},
 	{
 		value: 'intermediate',
 		label: 'Intermediate',
-		description: '1-3 years of consistent training',
+		description: '2-5 years of consistent training',
 		emoji: '💪'
 	},
 	{
 		value: 'advanced',
 		label: 'Advanced',
-		description: '3+ years, near genetic potential',
+		description: '5+ years of consistent training',
 		emoji: '🏆'
 	}
 ];

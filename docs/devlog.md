@@ -4,6 +4,61 @@ Chronological notes on development progress, sessions, and learnings.
 
 ---
 
+## 2025-12-30
+
+### Session: PWA Offline Reliability Improvements (RP Hypertrophy-level persistence)
+
+**Problem:**
+App wouldn't load at the gym with spotty internet, even though user had previously visited the app. The loading screen would hang indefinitely waiting for network. Comparison to RP Hypertrophy app showed they have much better offline persistence.
+
+**Root cause:**
+1. Auth initialization called `supabase.auth.getSession()` without any timeout - would hang forever
+2. Layout blocked rendering until auth was initialized
+3. Service worker used `NetworkFirst` for navigation - waits for network before cache
+4. No prompt to install PWA (installed PWAs have better persistence)
+
+**Fixes implemented (true offline-first architecture):**
+
+1. **StaleWhileRevalidate for navigation** (`vite.config.ts`):
+   - Changed from `NetworkFirst` to `StaleWhileRevalidate`
+   - Page ALWAYS loads from cache first, network updates in background
+   - This is the key to "never shows loading" behavior like RP Hypertrophy
+   - Enabled `skipWaiting: true` and `clientsClaim: true` for immediate control
+   - Added `navigationPreload: true` for faster network fetches
+
+2. **Non-blocking layout** (`src/routes/+layout.svelte`):
+   - Layout now renders immediately if user has cached session
+   - Only shows "Loading..." for first-time visitors with no cache
+   - Uses new `auth.hasCachedSession` flag to detect cached state
+
+3. **Synchronous cache check** (`src/lib/stores/auth.svelte.ts`):
+   - Profile loaded from localStorage at store creation (synchronous)
+   - `hasCachedSession` flag set immediately based on localStorage state
+   - `isAuthenticated` now returns true if we have cached profile (for offline)
+   - Auth initialization timeout (5s) prevents hanging
+
+4. **PWA install prompt** (`src/lib/components/pwa/InstallPrompt.svelte`):
+   - Prompts users to "Add to Home Screen" for better persistence
+   - Installed PWAs get dedicated cache, more persistent service worker
+   - Shows after first visit, respects 7-day dismiss duration
+   - Detects if already installed (standalone mode)
+
+**Why "Add to Home Screen" matters:**
+- Standalone mode runs like native app, not in browser tab
+- Dedicated cache not shared with browser (won't be evicted)
+- More persistent service worker
+- All assets precached at install time
+
+**Files modified:**
+- `vite.config.ts` - True offline-first caching strategy
+- `src/lib/stores/auth.svelte.ts` - Sync cache loading, hasCachedSession flag
+- `src/routes/+layout.svelte` - Non-blocking render with InstallPrompt
+
+**Files created:**
+- `src/lib/components/pwa/InstallPrompt.svelte` - PWA install banner
+
+---
+
 ## 2025-12-29
 
 ### Session: AI Voice Assistant Implementation (Phase 1)

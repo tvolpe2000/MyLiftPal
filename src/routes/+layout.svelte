@@ -5,6 +5,7 @@
 	import { theme } from '$lib/stores/theme.svelte';
 	import { workoutSettings } from '$lib/stores/workoutSettings.svelte';
 	import { offline } from '$lib/stores/offlineStore.svelte';
+	import InstallPrompt from '$lib/components/pwa/InstallPrompt.svelte';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 
@@ -42,11 +43,16 @@
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 <div class="min-h-screen bg-[var(--color-bg-primary)]">
-	{#if !auth.initialized}
+	{#if auth.initialized || auth.hasCachedSession}
+		<!-- Show content immediately if we have cached data OR auth is fully initialized -->
+		{@render children()}
+	{:else}
+		<!-- Only show loading for first-time visitors with no cached data -->
 		<div class="min-h-screen flex items-center justify-center">
 			<div class="text-[var(--color-accent)] text-lg">Loading...</div>
 		</div>
-	{:else}
-		{@render children()}
 	{/if}
 </div>
+
+<!-- PWA install prompt for better offline experience -->
+<InstallPrompt />
