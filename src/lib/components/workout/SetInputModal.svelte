@@ -220,7 +220,8 @@
 			<div class="flex-1 overflow-y-auto p-6 space-y-8">
 				<!-- Weight Input -->
 				<div>
-					<label class="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
+					<!-- svelte-ignore a11y_label_has_associated_control -->
+					<label id="weight-label" class="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
 						Weight (lbs)
 					</label>
 
@@ -231,6 +232,7 @@
 							min={0}
 							max={500}
 							step={currentIncrement}
+							label="Weight"
 						/>
 						<!-- Increment Toggle -->
 						<div class="flex justify-center gap-2 mt-3">
@@ -249,10 +251,11 @@
 						</div>
 					{:else}
 						<!-- Button-based Input -->
-						<div class="flex items-center justify-center gap-4">
+						<div class="flex items-center justify-center gap-4" role="group" aria-labelledby="weight-label">
 							<button
 								type="button"
 								onclick={() => adjustWeight(-currentIncrement)}
+								aria-label="Decrease weight"
 								class="w-14 h-14 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] flex items-center justify-center"
 							>
 								<Minus size={24} />
@@ -260,11 +263,13 @@
 							<input
 								type="number"
 								bind:value={weight}
+								aria-label="Weight in pounds"
 								class="w-32 text-center text-4xl font-bold bg-transparent text-[var(--color-text-primary)] focus:outline-none"
 							/>
 							<button
 								type="button"
 								onclick={() => adjustWeight(currentIncrement)}
+								aria-label="Increase weight"
 								class="w-14 h-14 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] flex items-center justify-center"
 							>
 								<Plus size={24} />
@@ -290,7 +295,8 @@
 
 				<!-- Reps Input -->
 				<div>
-					<label class="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
+					<!-- svelte-ignore a11y_label_has_associated_control -->
+					<label id="reps-label" class="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
 						Reps
 					</label>
 
@@ -301,14 +307,17 @@
 							min={1}
 							max={30}
 							step={1}
+							label="Reps"
 						/>
 					{:else}
 						<!-- Quick-Select Buttons -->
-						<div class="flex items-center justify-center gap-2">
+						<div class="flex items-center justify-center gap-2" role="group" aria-labelledby="reps-label">
 							{#each repOptions as option}
 								<button
 									type="button"
 									onclick={() => (reps = option)}
+									aria-label="{option} reps"
+									aria-pressed={reps === option}
 									class="w-12 h-12 rounded-full font-semibold transition-colors {reps === option
 										? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
 										: 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]'}"
@@ -321,16 +330,18 @@
 							<button
 								type="button"
 								onclick={() => (reps = Math.max(1, reps - 1))}
+								aria-label="Decrease reps"
 								class="w-10 h-10 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] flex items-center justify-center"
 							>
 								<Minus size={18} />
 							</button>
-							<span class="text-2xl font-bold text-[var(--color-text-primary)] w-12 text-center">
+							<span class="text-2xl font-bold text-[var(--color-text-primary)] w-12 text-center" aria-live="polite">
 								{reps}
 							</span>
 							<button
 								type="button"
 								onclick={() => (reps = reps + 1)}
+								aria-label="Increase reps"
 								class="w-10 h-10 rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] flex items-center justify-center"
 							>
 								<Plus size={18} />
@@ -341,14 +352,17 @@
 
 				<!-- RIR Input -->
 				<div>
-					<label class="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
+					<!-- svelte-ignore a11y_label_has_associated_control -->
+					<label id="rir-label" class="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
 						RIR (Reps in Reserve)
 					</label>
-					<div class="flex items-center justify-center gap-2">
+					<div class="flex items-center justify-center gap-2" role="group" aria-labelledby="rir-label">
 						{#each rirOptions as option}
 							<button
 								type="button"
 								onclick={() => (rir = rir === option ? null : option)}
+								aria-label="{option} reps in reserve"
+								aria-pressed={rir === option}
 								class="w-12 h-12 rounded-full font-semibold transition-colors {rir === option
 									? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
 									: 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]'}"

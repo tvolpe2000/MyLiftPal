@@ -126,6 +126,8 @@
 					<button
 						type="button"
 						onclick={() => (includeExercises = !includeExercises)}
+						aria-label="Toggle include exercises"
+						aria-pressed={includeExercises}
 						class="w-12 h-7 rounded-full transition-colors relative {includeExercises
 							? 'bg-[var(--color-accent)]'
 							: 'bg-[var(--color-bg-tertiary)]'}"

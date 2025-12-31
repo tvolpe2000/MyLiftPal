@@ -9,7 +9,7 @@ DELETE FROM app_roadmap;
 -- IN PROGRESS (Currently being built)
 -- ============================================================================
 
--- (None currently - all items shipped or planned)
+-- (None currently)
 
 -- ============================================================================
 -- PLANNED (Next up - in priority order)
@@ -17,16 +17,22 @@ DELETE FROM app_roadmap;
 
 INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
 (
+  'AI Voice Responses',
+  'Hear spoken confirmations for hands-free workout logging',
+  'planned',
+  12
+),
+(
   'Additional AI Providers',
   'Add Claude and Gemini as alternative AI providers alongside OpenAI',
   'planned',
-  10
+  13
 ),
 (
   'Photo Import',
   'Snap a photo of handwritten logs to digitize them',
   'planned',
-  11
+  14
 );
 
 -- ============================================================================
@@ -75,6 +81,30 @@ INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
   'Quick links to exercise demonstration videos',
   'tracked',
   26
+),
+(
+  'Dropsets & Supersets',
+  'Mark sets as dropsets or pair exercises as supersets',
+  'tracked',
+  27
+),
+(
+  'Progress Charts',
+  'Visualize your strength gains over time per exercise',
+  'tracked',
+  28
+),
+(
+  'Smart Program Recommendations',
+  'Get template suggestions based on your goals and schedule',
+  'tracked',
+  29
+),
+(
+  'In-App Help & FAQ',
+  'Searchable help system with answers to common questions',
+  'tracked',
+  30
 );
 
 -- Verify the update

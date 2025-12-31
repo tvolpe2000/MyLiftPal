@@ -51,9 +51,17 @@ export const clarifySchema = z.object({
 	question: z.string().min(1).describe('Clarifying question to ask')
 });
 
+export const logMultipleSetsSchema = z.object({
+	weight: z.number().positive().describe('Weight in pounds'),
+	reps: z.number().int().positive().describe('Number of reps per set'),
+	sets: z.number().int().min(2).max(10).describe('Number of sets to log (2-10)'),
+	rir: z.number().int().min(0).max(5).optional().describe('Reps in Reserve for all sets')
+});
+
 // Workout tools schema map
 export const workoutToolSchemas = {
 	logSet: logSetSchema,
+	logMultipleSets: logMultipleSetsSchema,
 	skipExercise: skipExerciseSchema,
 	swapExercise: swapExerciseSchema,
 	completeWorkout: completeWorkoutSchema,
@@ -76,6 +84,7 @@ export const toolSchemas: Record<ToolName, z.ZodType> = {
 
 // Type inference from schemas
 export type LogSetParams = z.infer<typeof logSetSchema>;
+export type LogMultipleSetsParams = z.infer<typeof logMultipleSetsSchema>;
 export type SkipExerciseParams = z.infer<typeof skipExerciseSchema>;
 export type SwapExerciseParams = z.infer<typeof swapExerciseSchema>;
 export type CompleteWorkoutParams = z.infer<typeof completeWorkoutSchema>;
@@ -120,6 +129,36 @@ export const openAITools: OpenAIFunctionDef[] = [
 				}
 			},
 			required: ['weight', 'reps']
+		}
+	},
+	{
+		name: 'logMultipleSets',
+		description: 'Log multiple sets at once with the same weight and reps. Use when user says "3 sets of 10 at 185" or "did all my sets at 135 for 8".',
+		parameters: {
+			type: 'object',
+			properties: {
+				weight: {
+					type: 'number',
+					description: 'Weight in pounds for all sets'
+				},
+				reps: {
+					type: 'integer',
+					description: 'Number of reps per set'
+				},
+				sets: {
+					type: 'integer',
+					description: 'Number of sets to log (2-10)',
+					minimum: 2,
+					maximum: 10
+				},
+				rir: {
+					type: 'integer',
+					description: 'Reps in Reserve for all sets (0-5)',
+					minimum: 0,
+					maximum: 5
+				}
+			},
+			required: ['weight', 'reps', 'sets']
 		}
 	},
 	{
@@ -230,26 +269,36 @@ export const WORKOUT_SYSTEM_PROMPT = `You are a workout logging assistant for Ir
 
 Current workout context will be provided with each request. Respond ONLY with a tool call - no conversational text.
 
-Guidelines:
-- For logging sets: Extract weight, reps, and RIR from natural speech
+IMPORTANT GUIDELINES:
+1. SINGLE SET: Use "logSet" for logging ONE set at a time
+2. MULTIPLE SETS: Use "logMultipleSets" when user mentions doing MULTIPLE sets with the same weight/reps
+   - "3 sets of 10 at 185" → logMultipleSets
+   - "did all 4 sets at 135" → logMultipleSets
+   - "185 for 8" → logSet (single set)
+
+Weight & RIR:
 - Weight can be in lbs or kg (convert kg to lbs by multiplying by 2.2)
-- RIR (Reps in Reserve) can be inferred from phrases:
-  - "felt easy", "could do more" → RIR 3-4
+- "Same weight" or "same" = use weight from previous set or context (set weight to 0)
+- RIR (Reps in Reserve) can be inferred:
+  - "felt easy", "could do more", "light" → RIR 3-4
   - "moderate", "good effort" → RIR 2
-  - "hard", "tough" → RIR 1
-  - "to failure", "couldn't do another" → RIR 0
-- "Same weight" means use the weight from the previous set or context
-- If the user's intent is unclear, use the "clarify" tool to ask a brief question
+  - "hard", "tough", "challenging" → RIR 1
+  - "to failure", "couldn't do another", "maxed out" → RIR 0
 
 Common patterns:
-- "185 for 8" → logSet with weight=185, reps=8
-- "Same weight, got 7" → logSet with weight from context, reps=7
-- "Skip this one, elbow hurts" → skipExercise with reason
-- "Do cable flyes instead" → swapExercise with newExercise="cable flyes" (swaps current)
-- "Swap incline press with flat bench" → swapExercise with targetExercise="incline press", newExercise="flat bench"
-- "Replace lat pulldown with pull-ups" → swapExercise with targetExercise="lat pulldown", newExercise="pull-ups"
-- "Add some curls" → addExercise with exercise="curls"
-- "I'm done" → completeWorkout`;
+- "185 for 8" → logSet(weight=185, reps=8)
+- "135 for 10, RIR 2" → logSet(weight=135, reps=10, rir=2)
+- "Same weight, got 7" → logSet(weight=0, reps=7)
+- "3 sets of 10 at 185" → logMultipleSets(weight=185, reps=10, sets=3)
+- "Did all my sets at 135 for 8" → logMultipleSets(weight=135, reps=8, sets=value from context)
+- "Skip this one" → skipExercise
+- "Do cable flyes instead" → swapExercise(newExercise="cable flyes")
+- "Swap incline press with flat bench" → swapExercise(targetExercise="incline press", newExercise="flat bench")
+- "Add some curls" → addExercise(exercise="curls")
+- "I'm done" / "Finish workout" → completeWorkout
+- "Undo" / "That was wrong" → undoLast
+
+If the user's intent is unclear, use the "clarify" tool.`;
 
 // Alias for backward compatibility
 export const SYSTEM_PROMPT = WORKOUT_SYSTEM_PROMPT;
@@ -260,24 +309,38 @@ export const SYSTEM_PROMPT = WORKOUT_SYSTEM_PROMPT;
 
 export const GLOBAL_SYSTEM_PROMPT = `You are IronAthena, a workout planning assistant. The user is NOT currently in a workout.
 
-Available actions:
-- Answer questions about their training schedule, volume, and personal records
-- Help reschedule or swap workout days
-- Modify their training block (add/remove sets, change exercises)
-
 Respond ONLY with a tool call - no conversational text.
 
-Common patterns:
-- "What's my workout today?" → getTodaysWorkout
-- "How much did I bench last week?" → getPersonalRecords with exerciseName
-- "Show me my stats" → getStats
-- "What's my volume for chest?" → getWeeklyVolume with muscleGroup="chest"
-- "Swap today with tomorrow" → swapWorkoutDays with dayA (current) and dayB (next)
-- "Skip today" → skipDay
-- "Add a set to bench press" → addSetsToExercise
-- "Change squats to 6-8 reps" → changeRepRange
+TOOL CATEGORIES:
 
-If the user's intent is unclear, use the "clarify" tool to ask a brief question.`;
+1. QUERIES (get information):
+- "What's my workout today?" → getTodaysWorkout
+- "What's on today?" → getTodaysWorkout
+- "Show me my stats" → getStats(timeframe="week")
+- "Monthly stats" → getStats(timeframe="month")
+- "All-time stats" → getStats(timeframe="all")
+- "What's my volume for chest?" → getWeeklyVolume(muscleGroup="chest")
+- "How much volume am I doing?" → getWeeklyVolume
+- "What's my bench PR?" → getPersonalRecords(exerciseName="bench")
+- "Show my PRs" → getPersonalRecords
+- "How's my block going?" → getBlockProgress
+
+2. SCHEDULE CHANGES (day management):
+- "Skip today" / "Skip this workout" → skipDay
+- "Swap today with tomorrow" → swapWorkoutDays(dayA=current, dayB=next)
+- "Switch day 1 and day 3" → swapWorkoutDays(dayA=1, dayB=3)
+- "Do leg day today instead" → rescheduleDay(targetDayNumber=leg day number)
+- "Move to day 2" → rescheduleDay(targetDayNumber=2)
+
+3. BLOCK MODIFICATIONS (change your program):
+- "Add a set to bench press" → addSetsToExercise(exerciseName="bench press")
+- "Add 2 sets to squats" → addSetsToExercise(exerciseName="squats", additionalSets=2)
+- "Remove a set from curls" → removeSetsFromExercise(exerciseName="curls")
+- "Change squats to 6-8 reps" → changeRepRange(exerciseName="squats", minReps=6, maxReps=8)
+- "Make bench 8-10 reps on day 1" → changeRepRange(exerciseName="bench", minReps=8, maxReps=10, dayNumber=1)
+- "Replace lat pulldown with pull-ups" → modifyBlockExercise(exerciseName="lat pulldown", newExerciseName="pull-ups")
+
+If unclear what the user wants, use the "clarify" tool.`;
 
 // ============================================
 // Combined System Prompt (for mixed context)

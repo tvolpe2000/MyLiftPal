@@ -27,6 +27,7 @@ export { setLastAction, clearLastAction, getLastAction, buildWorkoutContext };
 
 export const WORKOUT_TOOLS: WorkoutToolName[] = [
 	'logSet',
+	'logMultipleSets',
 	'skipExercise',
 	'swapExercise',
 	'completeWorkout',
@@ -78,9 +79,13 @@ export function hasActiveBlock(): boolean {
  * Build unified context for global AI assistant
  */
 export async function buildUnifiedContext(): Promise<UnifiedContext> {
-	// Ensure training block store is initialized
-	if (!trainingBlockStore.initialized) {
-		await trainingBlockStore.loadActiveBlock();
+	// Wait for training block store to be fully initialized
+	// This handles race conditions where the store is still loading
+	await trainingBlockStore.waitForInitialization();
+
+	// Also load stats if not already loaded
+	if (!trainingBlockStore.stats) {
+		await trainingBlockStore.loadStats();
 	}
 
 	// Build workout context if in active workout

@@ -45,6 +45,9 @@ export interface Database {
 					mev: number;
 					mav: number;
 					mrv: number;
+					image_url_main: string | null;
+					image_url_secondary: string | null;
+					is_front: boolean; // true = front body, false = back body
 				};
 				Insert: {
 					id: string;
@@ -55,6 +58,9 @@ export interface Database {
 					mev?: number;
 					mav?: number;
 					mrv?: number;
+					image_url_main?: string | null;
+					image_url_secondary?: string | null;
+					is_front?: boolean;
 				};
 				Update: {
 					id?: string;
@@ -65,6 +71,9 @@ export interface Database {
 					mev?: number;
 					mav?: number;
 					mrv?: number;
+					image_url_main?: string | null;
+					image_url_secondary?: string | null;
+					is_front?: boolean;
 				};
 			};
 			exercises: {
@@ -76,6 +85,7 @@ export interface Database {
 					primary_muscle: string;
 					secondary_muscles: SecondaryMuscle[];
 					video_url: string | null;
+					image_url: string | null;
 					cues: string[];
 					default_rep_min: number;
 					default_rep_max: number;
@@ -93,6 +103,7 @@ export interface Database {
 					primary_muscle: string;
 					secondary_muscles?: SecondaryMuscle[];
 					video_url?: string | null;
+					image_url?: string | null;
 					cues?: string[];
 					default_rep_min?: number;
 					default_rep_max?: number;
@@ -110,6 +121,7 @@ export interface Database {
 					primary_muscle?: string;
 					secondary_muscles?: SecondaryMuscle[];
 					video_url?: string | null;
+					image_url?: string | null;
 					cues?: string[];
 					default_rep_min?: number;
 					default_rep_max?: number;

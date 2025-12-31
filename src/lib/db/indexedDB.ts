@@ -4,7 +4,7 @@ import type { Exercise, ExerciseSlot } from '$lib/types';
 import type { PreviousSetData } from '$lib/types/workout';
 
 const DB_NAME = 'myliftpal-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 // Offline workout day data structure
 export interface OfflineExerciseSlot extends ExerciseSlot {
@@ -43,6 +43,17 @@ export interface OfflineSession {
 	startedAt: number;
 }
 
+// Active workout state snapshot (for screen lock recovery)
+export interface WorkoutStateSnapshot {
+	id: string; // `${blockId}-${dayId}-${weekNumber}`
+	blockId: string;
+	dayId: string;
+	weekNumber: number;
+	sessionId: string | null;
+	exercises: unknown[]; // Serialized ExerciseState[]
+	savedAt: number;
+}
+
 // Database schema interface
 interface MyLiftPalDB {
 	workoutDays: {
@@ -57,6 +68,10 @@ interface MyLiftPalDB {
 	sessions: {
 		key: string;
 		value: OfflineSession;
+	};
+	workoutSnapshots: {
+		key: string;
+		value: WorkoutStateSnapshot;
 	};
 }
 
@@ -83,6 +98,11 @@ export async function getDB(): Promise<IDBPDatabase<MyLiftPalDB>> {
 				// Sessions store
 				if (!db.objectStoreNames.contains('sessions')) {
 					db.createObjectStore('sessions', { keyPath: 'id' });
+				}
+
+				// Workout state snapshots store (v2) - for screen lock recovery
+				if (!db.objectStoreNames.contains('workoutSnapshots')) {
+					db.createObjectStore('workoutSnapshots', { keyPath: 'id' });
 				}
 			}
 		});
@@ -234,4 +254,46 @@ export async function clearAllOfflineData(): Promise<void> {
 	await clearWorkoutDays();
 	await clearPendingSets();
 	await clearOfflineSessions();
+	await clearWorkoutSnapshots();
+}
+
+// ============ Workout State Snapshots ============
+
+/**
+ * Save a workout state snapshot for screen lock recovery
+ */
+export async function saveWorkoutSnapshot(snapshot: WorkoutStateSnapshot): Promise<void> {
+	const db = await getDB();
+	await db.put('workoutSnapshots', snapshot);
+}
+
+/**
+ * Get a workout state snapshot by ID
+ */
+export async function getWorkoutSnapshot(id: string): Promise<WorkoutStateSnapshot | undefined> {
+	const db = await getDB();
+	return db.get('workoutSnapshots', id);
+}
+
+/**
+ * Delete a workout state snapshot
+ */
+export async function deleteWorkoutSnapshot(id: string): Promise<void> {
+	const db = await getDB();
+	await db.delete('workoutSnapshots', id);
+}
+
+/**
+ * Clear all workout state snapshots
+ */
+export async function clearWorkoutSnapshots(): Promise<void> {
+	const db = await getDB();
+	await db.clear('workoutSnapshots');
+}
+
+/**
+ * Get snapshot ID for a specific workout context
+ */
+export function getSnapshotId(blockId: string, dayId: string, weekNumber: number): string {
+	return `${blockId}-${dayId}-${weekNumber}`;
 }

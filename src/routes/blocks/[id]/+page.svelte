@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { workout } from '$lib/stores/workoutStore.svelte';
 	import AppShell from '$lib/components/AppShell.svelte';
@@ -26,13 +27,45 @@
 				// Loading a specific past session for editing
 				workout.loadPastSession(sessionId);
 			} else {
-				// Normal flow: load current day/week
-				workout.loadWorkout(blockId);
+				// Normal flow: try to restore from snapshot first, then load fresh
+				loadWithSnapshotRecovery(blockId);
 			}
 		}
 
 		return () => {
 			workout.reset();
+		};
+	});
+
+	async function loadWithSnapshotRecovery(id: string) {
+		// Try to restore from a saved snapshot (screen lock recovery)
+		const restored = await workout.restoreFromSnapshot(id);
+		if (!restored) {
+			// No snapshot or invalid, load normally
+			workout.loadWorkout(id);
+		}
+	}
+
+	// Save state when page becomes hidden (screen lock, tab switch, app background)
+	onMount(() => {
+		function handleVisibilityChange() {
+			if (document.hidden) {
+				// Page is being hidden - save state
+				workout.saveStateSnapshot();
+			}
+		}
+
+		// Also save on beforeunload (page navigation, refresh)
+		function handleBeforeUnload() {
+			workout.saveStateSnapshot();
+		}
+
+		document.addEventListener('visibilitychange', handleVisibilityChange);
+		window.addEventListener('beforeunload', handleBeforeUnload);
+
+		return () => {
+			document.removeEventListener('visibilitychange', handleVisibilityChange);
+			window.removeEventListener('beforeunload', handleBeforeUnload);
 		};
 	});
 

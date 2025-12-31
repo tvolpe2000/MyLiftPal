@@ -74,10 +74,19 @@ function createTrainingBlockStore() {
 		error: null
 	});
 
+	// Track in-flight loading promise to prevent race conditions
+	let loadingPromise: Promise<void> | null = null;
+
 	/**
 	 * Load the user's active training block
+	 * Returns existing promise if load is already in progress
 	 */
 	async function loadActiveBlock(): Promise<void> {
+		// If already loading, return the existing promise
+		if (loadingPromise) {
+			return loadingPromise;
+		}
+
 		if (!auth.user) {
 			state.block = null;
 			state.initialized = true;
@@ -86,6 +95,9 @@ function createTrainingBlockStore() {
 
 		state.loading = true;
 		state.error = null;
+
+		// Create and store the loading promise
+		loadingPromise = (async () => {
 
 		try {
 			const { data: rawData, error } = await supabase
@@ -159,7 +171,25 @@ function createTrainingBlockStore() {
 		} finally {
 			state.loading = false;
 			state.initialized = true;
+			loadingPromise = null; // Clear the promise so next call starts fresh
 		}
+		})();
+
+		return loadingPromise;
+	}
+
+	/**
+	 * Wait for store to be initialized
+	 * Safe to call multiple times - returns immediately if already initialized
+	 */
+	async function waitForInitialization(): Promise<void> {
+		if (state.initialized && !loadingPromise) {
+			return;
+		}
+		if (loadingPromise) {
+			return loadingPromise;
+		}
+		return loadActiveBlock();
 	}
 
 	/**
@@ -372,6 +402,7 @@ function createTrainingBlockStore() {
 		// Methods
 		loadActiveBlock,
 		loadStats,
+		waitForInitialization,
 		getToday,
 		getDay,
 		swapDays,

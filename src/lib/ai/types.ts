@@ -17,6 +17,7 @@ import type { TrainingBlockSummary, WorkoutDaySummary, UserStats } from '$lib/st
 // Workout tools (only available during active workout)
 export type WorkoutToolName =
 	| 'logSet'
+	| 'logMultipleSets'
 	| 'skipExercise'
 	| 'swapExercise'
 	| 'completeWorkout'

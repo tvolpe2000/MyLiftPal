@@ -53,8 +53,8 @@ Quick reference for what's done vs what's remaining.
 **Priority: Bugs → UX → Features → Launch Prep**
 
 ### 4.1 Bugs (Highest Priority)
-- [ ] Fix screen lock causing page reload (see Known Issues)
-- [ ] Accessibility warnings (a11y) - see Known Issues
+- [x] Fix screen lock causing page reload (see Known Issues) ✅
+- [x] Accessibility warnings (a11y) - see Known Issues ✅
 
 ### 4.2 UX Improvements
 - [x] Swap exercises during workout (equipment busy, injury, preference) ✅
@@ -63,7 +63,7 @@ Quick reference for what's done vs what's remaining.
 - [x] Goal-based training (Hypertrophy, Strength, Maintenance, Power, Endurance) ✅
 - [x] Lifter level profiles (Beginner, Intermediate, Advanced) with onboarding ✅
 - [x] Home page redesign (Quick Stats, Weekly Volume, Personal Records) ✅
-- [ ] Additional themes (in progress)
+- [x] Additional themes (Amber, Violet, Zinc - 11 total) ✅
 - [x] PWA installation prompt (custom "Install App" button) ✅
 
 ### 4.3 AI & Advanced Features
@@ -88,7 +88,14 @@ Quick reference for what's done vs what's remaining.
   - [x] Proper success/error state handling
   - [x] Swap specific exercises by name (targetExercise parameter)
   - [x] FAB positioning fix (above Complete Workout button)
-- [ ] AI Voice Assistant Phase 1.7 - Bug fixes & missing tools (see details below)
+- [x] AI Voice Assistant Phase 1.7 - Bug fixes & missing tools ✅
+  - [x] Fixed training block context hydration bug (race condition)
+  - [x] Added logMultipleSets tool for batch set logging
+  - [x] Added global command API endpoint
+  - [x] Implemented all block tool executors
+  - [x] Implemented all schedule tool executors
+  - [x] Implemented all query tool executors
+  - [x] Improved system prompts with clearer examples
 - [ ] AI Voice Assistant Phase 2 - Text-to-Speech responses (see details below)
 - [ ] AI Voice Assistant Phase 3 - Additional providers (Claude, Gemini)
 - [ ] AI Voice Assistant Phase 4 - Data collection for fine-tuning
@@ -117,11 +124,11 @@ Tool Call → Category Executor → Store Actions
 Feedback Message → User
 ```
 
-**Tool Categories (19 Total Tools):**
+**Tool Categories (20 Total Tools):**
 
 | Category | Tools | Available When |
 |----------|-------|----------------|
-| Workout (7) | logSet, skipExercise, swapExercise, completeWorkout, addExercise, undoLast, clarify | In active workout |
+| Workout (8) | logSet, logMultipleSets, skipExercise, swapExercise, completeWorkout, addExercise, undoLast, clarify | In active workout |
 | Schedule (3) | swapWorkoutDays, skipDay, rescheduleDay | Has training block |
 | Block (4) | addSetsToExercise, removeSetsFromExercise, changeRepRange, modifyBlockExercise | Has training block |
 | Query (5) | getTodaysWorkout, getWeeklyVolume, getPersonalRecords, getStats, getBlockProgress | Always |
@@ -218,18 +225,24 @@ Feedback Message → User
 - Block (10): existing 4 + addWorkoutDay, removeWorkoutDay, duplicateWorkoutDay, renameWorkoutDay, addExerciseToDay, removeExerciseFromDay
 - Query (5): unchanged
 
-**Implementation Tasks:**
-- [ ] Fix training block context hydration bug
-- [ ] Add `logMultipleSets` tool + executor (batch set logging)
+**Implementation Tasks (Phase 1.7):**
+- [x] Fix training block context hydration bug ✅
+- [x] Add `logMultipleSets` tool + executor (batch set logging) ✅
+- [x] Implement block tool executors (addSets, removeSets, changeRepRange, modifyExercise) ✅
+- [x] Implement schedule tool executors (swapDays, skipDay, rescheduleDay) ✅
+- [x] Implement query tool executors (5 tools) ✅
+- [x] Create global command API endpoint (`/api/ai/openai/global`) ✅
+- [x] Improve system prompt to distinguish query vs modification intents ✅
+- [x] Add more example commands to tool descriptions ✅
+- [ ] Test with common user commands
+
+**Future Tools (deferred to later phase):**
 - [ ] Add `addWorkoutDay` tool + executor
 - [ ] Add `removeWorkoutDay` tool + executor
 - [ ] Add `duplicateWorkoutDay` tool + executor
 - [ ] Add `renameWorkoutDay` tool + executor
 - [ ] Add `addExerciseToDay` tool + executor
 - [ ] Add `removeExerciseFromDay` tool + executor
-- [ ] Improve system prompt to distinguish query vs modification intents
-- [ ] Add more example commands to tool descriptions
-- [ ] Test with common user commands
 
 ---
 
@@ -613,40 +626,36 @@ Lower priority items - implement after launch or as time permits:
 
 ## Known Issues / Technical Debt
 
-### Screen Lock Causes Page Reload
+### Screen Lock Causes Page Reload ✅ FIXED
 
 **Reported**: User locks phone during workout, page reloads and loses state when unlocked.
 
 **Cause**: iOS Safari and Android Chrome discard background tabs to save memory. When the user returns, the page must reload from scratch.
 
-**Solution approach**:
-1. Use Page Visibility API (`visibilitychange` event) to detect when page is hidden
-2. Save active workout state to IndexedDB before page is hidden
-3. On page load, check for saved workout state and restore it
-4. Consider Wake Lock API to prevent screen sleep during active workout (optional)
+**Solution implemented** (2025-12-31):
+1. Added `visibilitychange` event listener to detect when page is hidden
+2. Workout state is saved to IndexedDB (workoutSnapshots store) when page becomes hidden
+3. On page load, checks for saved snapshot and restores if valid (within 4 hours, session still in progress)
+4. Snapshots are cleared when workout is completed
 
-**Files to modify**:
-- `src/lib/stores/workoutStore.svelte.ts` - Add state persistence methods
-- `src/lib/db/indexedDB.ts` - Add workout state storage
-- `src/routes/blocks/[id]/+page.svelte` - Add visibility change listener
+**Files modified**:
+- `src/lib/stores/workoutStore.svelte.ts` - Added `saveStateSnapshot()`, `restoreFromSnapshot()`, `clearStateSnapshot()`
+- `src/lib/db/indexedDB.ts` - Added `workoutSnapshots` store (DB version 2)
+- `src/routes/blocks/[id]/+page.svelte` - Added visibility change and beforeunload listeners
 
 ---
 
-### Accessibility Warnings (a11y)
+### Accessibility Warnings (a11y) ✅ FIXED
 
-Non-blocking warnings from `npm run check`. Fix when time permits:
+**Fixed** (2025-12-31):
 
-| File | Line | Issue |
-|------|------|-------|
-| `ScrollWheelPicker.svelte` | 81 | Label not associated with control |
-| `TemplatePicker.svelte` | 126 | Toggle button missing `aria-label` |
-| `SetInputModal.svelte` | 223 | Label not associated with control (Weight) |
-| `SetInputModal.svelte` | 293 | Label not associated with control (Reps) |
-| `SetInputModal.svelte` | 344 | Label not associated with control (RIR) |
+| File | Fix Applied |
+|------|-------------|
+| `ScrollWheelPicker.svelte` | Added `role="listbox"`, `aria-labelledby`, `role="option"`, `aria-selected` |
+| `TemplatePicker.svelte` | Added `aria-label` and `aria-pressed` to toggle button |
+| `SetInputModal.svelte` | Added `role="group"` with `aria-labelledby`, `aria-label` on buttons |
 
-**Fix approach**:
-- For labels: Add `id` to input and `for` attribute to label, or wrap input inside label
-- For toggle button: Add `aria-label="Toggle include exercises"`
+All custom controls now have proper ARIA attributes for screen reader support.
 
 ### Dependency Vulnerabilities
 
@@ -660,6 +669,9 @@ From `npm audit` (4 low severity):
 
 | Date | Feature |
 |------|---------|
+| 2025-12-31 | AI Voice Phase 1.7 - Fixed context hydration bug, added logMultipleSets tool, implemented all tool executors |
+| 2025-12-31 | Accessibility fixes - ARIA attributes for ScrollWheelPicker, TemplatePicker, SetInputModal |
+| 2025-12-31 | Screen lock fix - Page Visibility API saves/restores workout state to IndexedDB |
 | 2025-12-30 | AI Voice Phase 1.7 planning - documented bugs, missing tools (6 new day-level tools) |
 | 2025-12-30 | AI Voice Phase 2 TTS research - documented self-hosted options (Chatterbox, Kokoro) |
 | 2025-12-30 | Competitor analysis (Alpha Progress) - documented feature gaps in Phase 5 |
@@ -728,4 +740,4 @@ From `npm audit` (4 low severity):
 
 ---
 
-*Last updated: 2025-12-30 (Competitor analysis - Phase 5 features documented)*
+*Last updated: 2025-12-31 (AI Voice Phase 1.7 complete - all tool executors implemented)*

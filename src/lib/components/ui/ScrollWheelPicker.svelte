@@ -74,11 +74,18 @@
 			containerRef.scrollTop = index * ITEM_HEIGHT;
 		}
 	});
+
+	// Generate a unique ID for accessibility
+	const pickerId = $derived(`picker-${label?.toLowerCase().replace(/\s+/g, '-') || 'value'}`);
 </script>
 
 <div class="flex flex-col items-center">
 	{#if label}
-		<label class="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+		<!-- svelte-ignore a11y_label_has_associated_control -->
+		<label
+			id="{pickerId}-label"
+			class="block text-sm font-medium text-[var(--color-text-secondary)] mb-2"
+		>
 			{label}
 		</label>
 	{/if}
@@ -101,6 +108,10 @@
 		<div
 			bind:this={containerRef}
 			onscroll={handleScroll}
+			role="listbox"
+			aria-labelledby={label ? `${pickerId}-label` : undefined}
+			aria-label={!label ? 'Select a value' : undefined}
+			tabindex="0"
 			class="h-[250px] overflow-y-scroll scroll-smooth scrollbar-hide"
 			style="scroll-snap-type: y mandatory;"
 		>
@@ -109,6 +120,8 @@
 
 			{#each options() as opt}
 				<div
+					role="option"
+					aria-selected={opt === value}
 					class="h-[50px] flex items-center justify-center text-2xl font-bold transition-colors"
 					style="scroll-snap-align: center;"
 					class:text-[var(--color-text-primary)]={opt === value}

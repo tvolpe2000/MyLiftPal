@@ -2,7 +2,13 @@ import { supabase } from '$lib/db/supabase';
 import { auth } from './auth.svelte';
 import { offline } from './offlineStore.svelte';
 import { calculateSetsForWeek } from '$lib/types/wizard';
-import type { PendingSet } from '$lib/db/indexedDB';
+import type { PendingSet, WorkoutStateSnapshot } from '$lib/db/indexedDB';
+import {
+	saveWorkoutSnapshot,
+	getWorkoutSnapshot,
+	deleteWorkoutSnapshot,
+	getSnapshotId
+} from '$lib/db/indexedDB';
 import type {
 	WorkoutState,
 	ExerciseState,
@@ -519,7 +525,10 @@ function createWorkoutStore() {
 
 			if (sessionError) throw sessionError;
 
-			// 2. Advance day/week
+			// 2. Clear the saved snapshot since workout is complete
+			await clearStateSnapshot();
+
+			// 3. Advance day/week
 			await advanceDay();
 
 			return true;
@@ -762,6 +771,177 @@ function createWorkoutStore() {
 		}
 	}
 
+	/**
+	 * Save current workout state to IndexedDB for screen lock recovery
+	 */
+	async function saveStateSnapshot(): Promise<void> {
+		if (!state.trainingBlock || !state.currentWorkoutDay || !state.session) {
+			return;
+		}
+
+		// Don't save snapshots for completed sessions or edit mode
+		if (state.session.status === 'completed' || state.isEditMode) {
+			return;
+		}
+
+		try {
+			const snapshotId = getSnapshotId(
+				state.trainingBlock.id,
+				state.currentWorkoutDay.id,
+				state.trainingBlock.current_week
+			);
+
+			const snapshot: WorkoutStateSnapshot = {
+				id: snapshotId,
+				blockId: state.trainingBlock.id,
+				dayId: state.currentWorkoutDay.id,
+				weekNumber: state.trainingBlock.current_week,
+				sessionId: state.session.id,
+				exercises: JSON.parse(JSON.stringify(state.exercises)), // Deep clone
+				savedAt: Date.now()
+			};
+
+			await saveWorkoutSnapshot(snapshot);
+			console.log('[WorkoutStore] State snapshot saved');
+		} catch (error) {
+			console.error('[WorkoutStore] Failed to save state snapshot:', error);
+		}
+	}
+
+	/**
+	 * Try to restore workout state from a saved snapshot
+	 * Returns true if snapshot was restored, false otherwise
+	 */
+	async function restoreFromSnapshot(blockId: string): Promise<boolean> {
+		if (!auth.user) return false;
+
+		state.loading = true;
+		state.error = '';
+
+		try {
+			// First, get the block to know current day/week
+			const { data: blockData, error: blockError } = await supabase
+				.from('training_blocks')
+				.select(`
+					id, name, total_weeks, current_week, current_day, status,
+					workout_days (id, day_number, name, target_muscles, time_budget_minutes)
+				`)
+				.eq('id', blockId)
+				.eq('user_id', auth.user.id)
+				.single();
+
+			if (blockError || !blockData) {
+				state.loading = false;
+				return false;
+			}
+
+			const block = blockData as unknown as TrainingBlockWithDays;
+			const currentDay = block.workout_days?.find(d => d.day_number === block.current_day);
+			if (!currentDay) {
+				state.loading = false;
+				return false;
+			}
+
+			const snapshotId = getSnapshotId(blockId, currentDay.id, block.current_week);
+			const snapshot = await getWorkoutSnapshot(snapshotId);
+
+			if (!snapshot) {
+				state.loading = false;
+				return false;
+			}
+
+			// Check if snapshot is recent (within last 4 hours)
+			const fourHoursAgo = Date.now() - 4 * 60 * 60 * 1000;
+			if (snapshot.savedAt < fourHoursAgo) {
+				// Snapshot is too old, delete it
+				await deleteWorkoutSnapshot(snapshotId);
+				state.loading = false;
+				return false;
+			}
+
+			// Verify the session still exists and is in_progress
+			if (snapshot.sessionId) {
+				const { data: sessionData } = await supabase
+					.from('workout_sessions')
+					.select('id, status')
+					.eq('id', snapshot.sessionId)
+					.single();
+
+				const session = sessionData as { id: string; status: string } | null;
+				if (!session || session.status === 'completed') {
+					// Session was completed elsewhere, delete snapshot
+					await deleteWorkoutSnapshot(snapshotId);
+					state.loading = false;
+					return false;
+				}
+			}
+
+			// Fetch exercise slots for the current day
+			const { data: slotsData, error: slotsError } = await supabase
+				.from('exercise_slots')
+				.select(`*, exercise:exercises (*)`)
+				.eq('workout_day_id', currentDay.id)
+				.order('slot_order');
+
+			if (slotsError) {
+				state.loading = false;
+				return false;
+			}
+
+			const slots = (slotsData || []) as unknown as ExerciseSlotWithExercise[];
+
+			// Restore the state
+			state.trainingBlock = block;
+			state.currentWorkoutDay = {
+				...currentDay,
+				exercise_slots: slots
+			} as WorkoutDayWithSlots;
+
+			// Fetch the session
+			if (snapshot.sessionId) {
+				const { data: sessionData } = await supabase
+					.from('workout_sessions')
+					.select('*, logged_sets (*)')
+					.eq('id', snapshot.sessionId)
+					.single();
+
+				if (sessionData) {
+					state.session = sessionData as unknown as WorkoutSession & { logged_sets: LoggedSet[] };
+				}
+			}
+
+			// Restore exercises from snapshot
+			state.exercises = snapshot.exercises as ExerciseState[];
+			state.loading = false;
+
+			console.log('[WorkoutStore] State restored from snapshot');
+			return true;
+		} catch (error) {
+			console.error('[WorkoutStore] Failed to restore from snapshot:', error);
+			state.loading = false;
+			return false;
+		}
+	}
+
+	/**
+	 * Clear the saved snapshot (call after workout completion)
+	 */
+	async function clearStateSnapshot(): Promise<void> {
+		if (!state.trainingBlock || !state.currentWorkoutDay) return;
+
+		try {
+			const snapshotId = getSnapshotId(
+				state.trainingBlock.id,
+				state.currentWorkoutDay.id,
+				state.trainingBlock.current_week
+			);
+			await deleteWorkoutSnapshot(snapshotId);
+			console.log('[WorkoutStore] State snapshot cleared');
+		} catch (error) {
+			console.error('[WorkoutStore] Failed to clear state snapshot:', error);
+		}
+	}
+
 	function reset() {
 		state.trainingBlock = null;
 		state.currentWorkoutDay = null;
@@ -835,7 +1015,11 @@ function createWorkoutStore() {
 		swapExercise,
 		findExerciseSettings,
 		addExercise,
-		reset
+		reset,
+		// Screen lock recovery
+		saveStateSnapshot,
+		restoreFromSnapshot,
+		clearStateSnapshot
 	};
 }
 

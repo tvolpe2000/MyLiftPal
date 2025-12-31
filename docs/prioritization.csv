@@ -1,0 +1,59 @@
+ID,Feature,Priority,State,Reason
+4.1.1,Screen lock page reload fix,0,Ready for Deploy,Critical bug - users lose workout progress when phone locks. Fixed with Page Visibility API + IndexedDB (Dec 31)
+4.1.2,Accessibility warnings (a11y),0,Ready for Deploy,Important for inclusivity and app store compliance. Fixed ARIA attributes for ScrollWheelPicker TemplatePicker SetInputModal (Dec 31)
+4.3.1,AI Voice Phase 1.7 - Bug fixes & missing tools,0,Ready for Deploy,Fixed context hydration bug and implemented all tool executors (Dec 31)
+4.4.3,Bug fixes from beta feedback,200,Open,High priority once beta starts. Reactive to user feedback.
+4.4.2,Beta testing with real users,210,Open,Critical for finding real-world issues. Depends on stability of core features.
+5.1.4,Expanded exercise database,0,Deployed/Done,Imported 583 new exercises from Wger API (81 → 664 total after dedup). Dec 31.
+5.1.1,Exercise thumbnails/photos,0,Deployed/Done,Imported 194 exercise images from Wger API + 16 muscle SVG diagrams. Dec 31.
+5.1.3,Written exercise instructions,240,Open,AI can generate these. Medium effort. Good for beginners.
+5.1.2,Exercise instruction videos,250,Open,40 video URLs imported from Wger. Could source more from YouTube. Dec 31.
+4.3.2,AI Voice Phase 2 - Text-to-Speech,260,Open,True hands-free experience. Browser TTS is free and low effort. High user value during workouts.
+5.2.2,Rest timer,270,Open,Competitor has this. More important for strength training. Lower priority for hypertrophy focus. Medium effort.
+4.4.1,Test data seeding (demo account),280,Open,Needed for demos and testing. Moderate effort. Useful for onboarding.
+5A.3,Input validation layer for LLM,290,Open,Prevents prompt injection. Should implement before wider release. Medium effort.
+5A.4,Output validation layer for LLM,300,Open,Already using Zod partially. Extend to all LLM responses. Medium effort.
+5A.1,Semgrep static analysis,310,Open,Good security practice. Can run locally now. Low effort to set up.
+5.2.3,Dropsets support,320,Open,Time-saver for advanced users. Competitor has this. Medium effort to implement.
+5.2.4,Supersets support,330,Open,Significant time-saver. Requires UI changes to pair exercises. Medium-high effort.
+5A.5,Rate limiting & monitoring,340,Open,Prevents abuse and controls costs. Important before scale.
+5A.2,Garak LLM vulnerability scanning,350,Open,Important for production LLM apps. Requires dedicated testing time.
+4.3.3,AI Voice Phase 3 - Additional providers,360,Open,Claude/Gemini alternatives. Nice to have but OpenAI works. Low user demand currently.
+5.2.1,Hybrid scroll wheel + numpad input,370,Open,Current separate modes work fine. No bugs and no user complaints. Nice UX polish but not critical. Moderate refactor effort.
+5.3.1,Add focusMuscles metadata to templates,380,Open,Foundation for smart recommendations. Low effort (data entry).
+5.3.2,Template matching algorithm,390,Open,Depends on 5.3.1. Medium effort algorithm work.
+4.3.5,Photo import (OCR),400,Open,Niche use case for users with handwritten logs. Medium effort and limited audience.
+5.3.3,Smart Recommendations wizard step,410,Open,Nice wizard enhancement. Depends on 5.3.1 and 5.3.2.
+5.3.4,Match percentage display,420,Open,Polish feature. Low priority.
+5.5.1,Equipment profile setup,430,Open,Nice for filtering. Not critical - users can ignore exercises they cant do.
+5.5.2,Weight increment config per equipment,440,Open,Already have global increment setting. Per-equipment is over-engineering for now.
+5.5.3,Filter exercises by available equipment,450,Open,Depends on 5.5.1. Nice to have.
+5.6.1,Add muscleBias field to templates,460,Open,Data entry work. Enables filtering. Low priority.
+5.6.2,Template picker filter by muscle focus,470,Open,Depends on 5.6.1. Nice to have.
+5.6.3,Visual muscle emphasis indicator,480,Open,Data ready (muscle SVGs + is_front in DB). Needs UI component to composite base body + muscle overlays. Dec 31.
+BL.11,In-app FAQ/Help system,490,Open,Competitor has this. Reduces support burden. Medium effort.
+BL.1,Duplicate training block,500,Open,Convenience feature. Users can recreate manually. Low effort when implemented.
+BL.3,Workout notes/journaling,510,Open,Nice for tracking how you felt. Not core to logging.
+BL.8,Calendar view on home page,520,Open,Visual weekly schedule. Nice to have. Medium effort.
+4.3.4,AI Voice Phase 4 - Data collection,530,Open,Future optimization. Requires significant usage data first. No immediate user benefit.
+5.5.4,Multiple gym profiles,540,Open,Edge case for users with multiple gyms. Low demand.
+BL.6,Body weight tracking,550,Open,Useful for bodyweight exercises. Separate concern from lifting.
+BL.4,Deload week auto-generation,560,Open,Advanced feature. Most users plan deloads manually.
+BL.9,Apple Health / Health Connect,570,Open,Platform integrations. High effort and platform-specific.
+BL.5,Warm-up set suggestions,580,Open,Lower priority for hypertrophy. Users know their warm-ups.
+BL.10,Achievements/Gamification,590,Open,Fun but not core. Can distract from training focus.
+BL.7,Gender selection,600,Open,May affect volume recommendations. Research needed on impact.
+5.4.1,Exercise history chart (weight over time),610,Open,DEFERRED - Need more user data first. Visual progress is motivating but nothing to show yet.
+5.4.2,Volume per muscle chart,620,Open,DEFERRED - Need more user data first. Complements existing volume tracking.
+5.4.4,Personal records page with progression,630,Open,DEFERRED - Need more user data first. We show PRs on home page but no history to display yet.
+5.4.5,Stats dashboard (volume streak consistency),640,Open,DEFERRED - Need more user data first. Consolidate stats in one view.
+5.4.3,1RM/10RM estimated max tracking,650,Open,DEFERRED - Need more user data first. Useful metric for strength users.
+BL.2,Export data (CSV/JSON),660,Open,DEFERRED - Need more user data first. Data portability important but nothing to export yet.
+SOC.4,Publish training block as template,700,Open,Key differentiator - friends training together. High value but high effort.
+SOC.5,Save shared template to library,710,Open,Depends on SOC.4.
+SOC.1,Share workout summary,720,Open,Social features are scope creep. Focus on core first.
+SOC.2,Share personal records,730,Open,Same as above.
+SOC.3,Share weekly/monthly stats,740,Open,Same as above.
+SOC.6,Template visibility settings,750,Open,Privacy controls. Depends on sharing features.
+SOC.7,Community template gallery,760,Open,Requires moderation and infrastructure. Major feature.
+SOC.8,Facebook/Reddit integration,800,Open,Low priority. External communities work fine.
