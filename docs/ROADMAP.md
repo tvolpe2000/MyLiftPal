@@ -416,21 +416,27 @@ LLM integrations that can modify user data require specific security measures.
 
 Based on competitor analysis (Alpha Progress app), prioritized by impact.
 
-### 5.1 Exercise Content (Critical Gap)
+### 5.1 Exercise Content ✅ MAJOR PROGRESS
 
-**Problem**: Our exercise library lacks visual content. Competitor has 795+ exercises with photos and videos.
+**Problem**: Our exercise library lacked visual content. Competitor has 795+ exercises with photos and videos.
 
-- [ ] Exercise thumbnails/photos - Static images showing exercise position
-- [ ] Exercise instruction videos - Video demonstrations with playback
-- [ ] Written exercise instructions - Setup, Execution, Tips text
-- [ ] Expanded exercise database - Need to source data (ExRx.net API? Open-source dataset? Manual creation?)
+- [x] **Expanded exercise database** - Imported 583 exercises from Wger API (81 → 664 total) ✅
+- [x] **Exercise thumbnails/photos** - 194 exercise images from Wger ✅
+- [x] **Muscle group SVG diagrams** - 16 muscle overlays with front/back body positioning ✅
+- [x] **Video URLs** - 40 exercise videos imported from Wger ✅
+- [ ] Exercise instruction videos - Could source more from YouTube
+- [ ] Written exercise instructions - AI can generate these (medium effort)
 
-**Data Source Options to Research:**
-1. ExRx.net - Comprehensive but may have licensing restrictions
-2. Wger API (wger.de) - Open source workout manager with exercise data
-3. MuscleWiki - Has exercise database
-4. Manual creation with AI-generated descriptions + stock/licensed videos
-5. Partner with fitness content creators
+**Data Source Used:**
+- Wger API (https://wger.de/api/v2/) - Open source, AGPL-3.0 license (requires attribution)
+- Scripts in `scripts/import-wger-exercises.ts` and `scripts/import-exercise-images.ts`
+- Migration: `supabase/migrations/006_exercise_images.sql`
+
+**Stats (Dec 31, 2025):**
+- Total exercises: 664 (was 81)
+- With images: 194 (~30%)
+- With videos: 40 (~6%)
+- Muscle SVGs: 16 (100% coverage)
 
 ### 5.2 Workout Logging UX Improvements
 

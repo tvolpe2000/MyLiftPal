@@ -1,7 +1,7 @@
 ID,Feature,Priority,State,Reason
-4.1.1,Screen lock page reload fix,0,Ready for Deploy,Critical bug - users lose workout progress when phone locks. Fixed with Page Visibility API + IndexedDB (Dec 31)
-4.1.2,Accessibility warnings (a11y),0,Ready for Deploy,Important for inclusivity and app store compliance. Fixed ARIA attributes for ScrollWheelPicker TemplatePicker SetInputModal (Dec 31)
-4.3.1,AI Voice Phase 1.7 - Bug fixes & missing tools,0,Ready for Deploy,Fixed context hydration bug and implemented all tool executors (Dec 31)
+4.1.1,Screen lock page reload fix,0,Deployed/Done,Critical bug - users lose workout progress when phone locks. Fixed with Page Visibility API + IndexedDB (Dec 31)
+4.1.2,Accessibility warnings (a11y),0,Deployed/Done,Important for inclusivity and app store compliance. Fixed ARIA attributes for ScrollWheelPicker TemplatePicker SetInputModal (Dec 31)
+4.3.1,AI Voice Phase 1.7 - Bug fixes & missing tools,0,Deployed/Done,Fixed context hydration bug and implemented all tool executors (Dec 31)
 4.4.3,Bug fixes from beta feedback,200,Open,High priority once beta starts. Reactive to user feedback.
 4.4.2,Beta testing with real users,210,Open,Critical for finding real-world issues. Depends on stability of core features.
 5.1.4,Expanded exercise database,0,Deployed/Done,Imported 583 new exercises from Wger API (81 → 664 total after dedup). Dec 31.

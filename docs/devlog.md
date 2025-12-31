@@ -4,6 +4,53 @@ Chronological notes on development progress, sessions, and learnings.
 
 ---
 
+## 2025-12-31
+
+### Session: Exercise Database Expansion, Images, and AI Voice Phase 1.7
+
+**Major updates deployed:**
+
+1. **Exercise Database (5.1.4) - DEPLOYED**
+   - Imported 583 exercises from Wger API (https://wger.de/api/v2/)
+   - Total exercises: 81 → 664 (after deduplication)
+   - Created muscle mapping (Wger 15 → MyLiftPal 16 muscle groups)
+   - Created equipment mapping (Wger 11 → MyLiftPal 8 equipment types)
+   - Scripts: `scripts/import-wger-exercises.ts`
+
+2. **Exercise & Muscle Images (5.1.1) - DEPLOYED**
+   - 194 exercise photos imported from Wger
+   - 16 muscle group SVG diagrams (overlays for body visualization)
+   - Added `is_front` flag to muscle_groups for front/back body positioning
+   - Base body SVG constants in `$lib/constants/images.ts`
+   - Migration: `supabase/migrations/006_exercise_images.sql`
+   - 40 video URLs also imported
+
+3. **AI Voice Phase 1.7 (4.3.1) - Ready for Deploy**
+   - Fixed training block context hydration bug (race condition)
+   - Added `logMultipleSets` tool for batch logging ("3 sets of 10 at 185")
+   - Implemented all tool executors:
+     - Block tools: addSetsToExercise, removeSetsFromExercise, changeRepRange, modifyBlockExercise
+     - Schedule tools: swapWorkoutDays, skipDay, rescheduleDay
+     - Query tools: getTodaysWorkout, getWeeklyVolume, getPersonalRecords, getStats, getBlockProgress
+   - New global command API endpoint: `/api/ai/openai/global`
+
+4. **Bug Fixes - Ready for Deploy**
+   - 4.1.1: Screen lock page reload fix (Page Visibility API + IndexedDB)
+   - 4.1.2: Accessibility fixes for ARIA attributes
+
+**Documentation updates:**
+- Added `docs/prioritization.csv` with task tracking and deployment states
+- Updated CLAUDE.md with deployment state definitions
+- State workflow: Open → In Progress → Code Complete → In Testing → Ready for Deploy → Deployed/Done
+
+**Scripts created:**
+- `scripts/import-wger-exercises.ts` - Import exercises from Wger
+- `scripts/import-exercise-images.ts` - Import exercise images
+- `scripts/run-migration-006.ts` - Populate muscle SVG URLs
+- `scripts/find-duplicates.ts` - Find/remove duplicate exercises
+
+---
+
 ## 2025-12-30
 
 ### Session: PWA Offline Reliability Improvements (RP Hypertrophy-level persistence)
