@@ -12,6 +12,20 @@
 
 INSERT INTO app_releases (version, title, released_at, highlights, changes) VALUES
 (
+  '2.1.0',
+  'Exercise Detail View',
+  '2025-12-31T20:00:00Z',
+  ARRAY['Exercise Details', 'Muscle Diagrams', 'Video Links'],
+  ARRAY[
+    'Tap any exercise to see detailed information',
+    'Visual muscle diagrams show primary and secondary muscles worked',
+    'Animated images and video links where available',
+    'Form tips and technique cues displayed',
+    'Info button on workout cards for quick reference during workouts',
+    'Equipment and recommended rep range shown'
+  ]
+),
+(
   '2.0.0',
   'Exercise Library Expansion',
   '2025-12-31T18:00:00Z',

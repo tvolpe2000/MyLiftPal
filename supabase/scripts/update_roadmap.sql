@@ -9,13 +9,7 @@ DELETE FROM app_roadmap;
 -- IN PROGRESS (Currently being built)
 -- ============================================================================
 
-INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
-(
-  'Visual Muscle Diagrams',
-  'See which muscles each exercise targets with highlighted body diagrams',
-  'in_progress',
-  5
-);
+-- (None currently - Visual Muscle Diagrams shipped in v2.1.0!)
 
 -- ============================================================================
 -- PLANNED (Next up - in priority order)
