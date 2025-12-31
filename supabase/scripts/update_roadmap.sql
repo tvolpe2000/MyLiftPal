@@ -9,7 +9,13 @@ DELETE FROM app_roadmap;
 -- IN PROGRESS (Currently being built)
 -- ============================================================================
 
--- (None currently)
+INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
+(
+  'Visual Muscle Diagrams',
+  'See which muscles each exercise targets with highlighted body diagrams',
+  'in_progress',
+  5
+);
 
 -- ============================================================================
 -- PLANNED (Next up - in priority order)
@@ -23,16 +29,28 @@ INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
   12
 ),
 (
+  'Written Exercise Instructions',
+  'Step-by-step setup and execution tips for each exercise',
+  'planned',
+  13
+),
+(
+  'Rest Timer',
+  'Countdown timer between sets with notifications',
+  'planned',
+  14
+),
+(
   'Additional AI Providers',
   'Add Claude and Gemini as alternative AI providers alongside OpenAI',
   'planned',
-  13
+  15
 ),
 (
   'Photo Import',
   'Snap a photo of handwritten logs to digitize them',
   'planned',
-  14
+  16
 );
 
 -- ============================================================================
@@ -65,20 +83,14 @@ INSERT INTO app_roadmap (title, description, status, sort_order) VALUES
   23
 ),
 (
-  'Rest Timer',
-  'Countdown timer between sets with notifications',
-  'tracked',
-  24
-),
-(
   'Workout Notes',
   'Add personal notes and journal entries to workouts',
   'tracked',
   25
 ),
 (
-  'Exercise Videos',
-  'Quick links to exercise demonstration videos',
+  'More Exercise Videos',
+  '40 exercises have videos - more coming from YouTube sources',
   'tracked',
   26
 ),

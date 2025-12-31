@@ -12,6 +12,21 @@
 
 INSERT INTO app_releases (version, title, released_at, highlights, changes) VALUES
 (
+  '2.0.0',
+  'Exercise Library Expansion',
+  '2025-12-31T18:00:00Z',
+  ARRAY['664 Exercises', 'Exercise Images', 'Muscle Diagrams'],
+  ARRAY[
+    'Expanded exercise database from 81 to 664 exercises via Wger API',
+    '194 exercises now have thumbnail images',
+    '16 muscle group SVG diagrams for visual reference',
+    '40 exercises include video demonstration URLs',
+    'Fixed screen lock bug - workouts now persist when phone locks',
+    'Improved accessibility (ARIA) for scroll wheel and modal inputs',
+    'AI Voice Assistant bug fixes and all tool executors working'
+  ]
+),
+(
   '1.9.1',
   'Offline Mode Bugfix',
   '2025-12-30T18:00:00Z',
