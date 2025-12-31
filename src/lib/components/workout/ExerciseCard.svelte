@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { workout } from '$lib/stores/workoutStore.svelte';
-	import { ChevronDown, ChevronUp } from 'lucide-svelte';
+	import { ChevronDown, ChevronUp, Info } from 'lucide-svelte';
 	import SetRow from './SetRow.svelte';
 	import SwapExerciseButton from './SwapExerciseButton.svelte';
+	import ExerciseDetailModal from '$lib/components/shared/ExerciseDetailModal.svelte';
 	import type { ExerciseState } from '$lib/types/workout';
 
 	let { exercise, exerciseIndex } = $props<{
@@ -12,6 +13,18 @@
 
 	const completedCount = $derived(exercise.sets.filter((s: { completed: boolean }) => s.completed).length);
 	const repRange = $derived(`${exercise.slot.rep_range_min}-${exercise.slot.rep_range_max}`);
+
+	// Exercise detail modal state
+	let showDetailModal = $state(false);
+
+	function openExerciseDetail(e: Event) {
+		e.stopPropagation(); // Prevent card expansion
+		showDetailModal = true;
+	}
+
+	function closeExerciseDetail() {
+		showDetailModal = false;
+	}
 
 	// Format muscle name: "front_delts" → "Front Delts"
 	function formatMuscle(name: string): string {
@@ -34,10 +47,11 @@
 
 <div class="bg-[var(--color-bg-secondary)] rounded-xl overflow-hidden">
 	<!-- Exercise Header -->
-	<button
-		type="button"
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
 		onclick={toggleExpand}
-		class="w-full flex items-center justify-between p-4 hover:bg-[var(--color-bg-tertiary)] transition-colors"
+		class="w-full flex items-center justify-between p-4 hover:bg-[var(--color-bg-tertiary)] transition-colors cursor-pointer"
 	>
 		<div class="flex-1 text-left">
 			<div class="flex items-center gap-2 flex-wrap">
@@ -77,6 +91,15 @@
 		</div>
 
 		<div class="flex items-center gap-1">
+			<!-- Info Button -->
+			<button
+				type="button"
+				onclick={openExerciseDetail}
+				class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--color-bg-tertiary)] transition-colors"
+				aria-label="View exercise details"
+			>
+				<Info size={18} class="text-[var(--color-text-muted)]" />
+			</button>
 			<SwapExerciseButton {exerciseIndex} {exercise} />
 			{#if exercise.isExpanded}
 				<ChevronUp size={20} class="text-[var(--color-text-muted)]" />
@@ -84,7 +107,7 @@
 				<ChevronDown size={20} class="text-[var(--color-text-muted)]" />
 			{/if}
 		</div>
-	</button>
+	</div>
 
 	<!-- Sets List -->
 	{#if exercise.isExpanded}
@@ -102,3 +125,10 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Exercise Detail Modal -->
+<ExerciseDetailModal
+	open={showDetailModal}
+	exercise={exercise.slot.exercise}
+	onclose={closeExerciseDetail}
+/>

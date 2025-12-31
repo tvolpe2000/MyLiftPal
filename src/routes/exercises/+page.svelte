@@ -5,6 +5,7 @@
 	import { supabase } from '$lib/db/supabase';
 	import { Search, Plus, Filter } from 'lucide-svelte';
 	import type { Exercise } from '$lib/types';
+	import ExerciseDetailModal from '$lib/components/shared/ExerciseDetailModal.svelte';
 
 	let exercises = $state<Exercise[]>([]);
 	let loading = $state(true);
@@ -12,6 +13,20 @@
 	let searchQuery = $state('');
 	let selectedEquipment = $state<string | null>(null);
 	let selectedMuscle = $state<string | null>(null);
+
+	// Exercise detail modal state
+	let selectedExercise = $state<Exercise | null>(null);
+	let showDetailModal = $state(false);
+
+	function openExerciseDetail(exercise: Exercise) {
+		selectedExercise = exercise;
+		showDetailModal = true;
+	}
+
+	function closeExerciseDetail() {
+		showDetailModal = false;
+		selectedExercise = null;
+	}
 
 	const equipmentTypes = ['barbell', 'dumbbell', 'cable', 'machine', 'bodyweight'];
 	const muscleGroups = ['chest', 'back_lats', 'back_upper', 'front_delts', 'side_delts', 'rear_delts', 'biceps', 'triceps', 'quads', 'hamstrings', 'glutes', 'calves', 'abs'];
@@ -127,7 +142,11 @@
 				{:else}
 					<div class="space-y-3">
 						{#each filteredExercises() as exercise}
-							<div class="bg-[var(--color-bg-secondary)] rounded-xl p-4 hover:bg-[var(--color-bg-tertiary)] transition-colors cursor-pointer">
+							<button
+								type="button"
+								onclick={() => openExerciseDetail(exercise)}
+								class="w-full text-left bg-[var(--color-bg-secondary)] rounded-xl p-4 hover:bg-[var(--color-bg-tertiary)] transition-colors"
+							>
 								<div class="flex items-start justify-between">
 									<div>
 										<h3 class="font-semibold text-[var(--color-text-primary)]">{exercise.name}</h3>
@@ -144,7 +163,7 @@
 										{exercise.default_rep_min}-{exercise.default_rep_max} reps
 									</div>
 								</div>
-							</div>
+							</button>
 						{/each}
 					</div>
 					<div class="mt-4 text-center text-sm text-[var(--color-text-muted)]">
@@ -153,5 +172,12 @@
 				{/if}
 			</div>
 		</div>
+
+		<!-- Exercise Detail Modal -->
+		<ExerciseDetailModal
+			open={showDetailModal}
+			exercise={selectedExercise}
+			onclose={closeExerciseDetail}
+		/>
 	</AppShell>
 {/if}
