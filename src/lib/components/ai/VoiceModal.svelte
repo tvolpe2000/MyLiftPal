@@ -3,7 +3,6 @@
 	import {
 		isWebSpeechSupported,
 		createSpeechRecognition,
-		requestMicrophonePermission,
 		type SpeechStatus,
 		type SpeechCallbacks
 	} from '$lib/ai/speech/webSpeech';
@@ -73,16 +72,23 @@
 		resultMessage = '';
 		status = 'idle';
 
-		// Request permission first if needed
-		const hasPermission = await requestMicrophonePermission();
-		if (!hasPermission) {
-			error = 'Microphone permission denied';
+		try {
+			if (recognition) {
+				recognition.start();
+			} else {
+				// Re-initialize if missing
+				const callbacks: SpeechCallbacks = {
+					onResult: handleSpeechResult,
+					onError: handleSpeechError,
+					onStatusChange: handleStatusChange
+				};
+				recognition = createSpeechRecognition(callbacks);
+				recognition?.start();
+			}
+		} catch (e) {
+			console.error('Failed to start recognition:', e);
+			error = 'Could not start microphone. Please try again.';
 			status = 'error';
-			return;
-		}
-
-		if (recognition) {
-			recognition.start();
 		}
 	}
 

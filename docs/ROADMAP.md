@@ -517,6 +517,18 @@ Based on competitor analysis (Alpha Progress app), prioritized by impact.
 - [ ] Template picker filter: "Focus: Chest" shows chest-biased templates
 - [ ] Visual indicator showing template's muscle emphasis
 
+### 5.7 Intelligent Coaching
+
+**Concept**: Use data trends to provide coaching advice (Deloads, Plateaus, Volume adjustments).
+
+- [ ] **Smart Deload Detection**
+  - Detect systemic fatigue (consistent performance drop across multiple exercises for 2+ weeks)
+  - Suggest scheduling a deload week
+  - Auto-generate deload week structure (50% sets, reduced weight)
+- [ ] **Plateau Detection**
+  - Detect 3+ weeks of stalling (no weight/rep increase) on specific exercises
+  - Suggest swapping exercise or changing rep range
+
 ---
 
 ## Backlog / Nice-to-Have

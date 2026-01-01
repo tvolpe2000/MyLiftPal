@@ -12,6 +12,19 @@
 
 INSERT INTO app_releases (version, title, released_at, highlights, changes) VALUES
 (
+  '2.1.1',
+  'PWA Reliability Update',
+  '2025-12-31T22:00:00Z',
+  ARRAY['Auto Updates', 'Stale Shell Fix', 'Voice Improvements'],
+  ARRAY[
+    'New update prompt shows when a new version is available',
+    'Auto-recovery from stale cache errors (version mismatch)',
+    'Improved voice assistant microphone handling',
+    'Better caching strategy for faster loads',
+    'Netlify deployment config for optimal performance'
+  ]
+),
+(
   '2.1.0',
   'Exercise Detail View',
   '2025-12-31T20:00:00Z',

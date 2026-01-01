@@ -22,8 +22,8 @@ export default defineConfig({
 				// Enable navigation preload for faster responses
 				navigationPreload: true,
 				runtimeCaching: [
-					// App shell & navigation - ALWAYS serve from cache first, update in background
-					// This is the key to "never shows loading" behavior like RP Hypertrophy
+					// App shell & navigation - StaleWhileRevalidate for instant loading (even in Lie-Fi)
+					// We handle version mismatches via global error handler in layout
 					{
 						urlPattern: ({ request }) => request.mode === 'navigate',
 						handler: 'StaleWhileRevalidate',

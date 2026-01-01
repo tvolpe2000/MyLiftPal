@@ -17,8 +17,17 @@
 - [ ] `src/lib/db/indexedDB.ts` - DB_NAME constant (`'myliftpal-offline'`)
 - [ ] `src/lib/stores/workoutSettings.svelte.ts` - STORAGE_KEY (`'myliftpal-workout-settings'`)
 - [ ] `src/lib/stores/theme.svelte.ts` - STORAGE_KEY (`'myliftpal-theme'`)
+- [ ] `src/lib/stores/auth.svelte.ts` - PROFILE_CACHE_KEY (`'myliftpal_cached_profile'`) and console logs
+- [ ] `src/hooks.client.ts` - Console error tags (`[MyLiftPal]`)
 - [ ] `src/lib/components/SideNav.svelte` - App name in navigation header
+- [ ] `src/lib/components/onboarding/LifterLevelModal.svelte` - Welcome text
+- [ ] `src/lib/components/pwa/InstallPrompt.svelte` - Install text and `DISMISSED_KEY`
 - [ ] `src/routes/auth/+layout.svelte` - App name/branding on auth pages
+- [ ] `src/routes/feedback/+page.svelte` - "Help us improve..." text
+- [ ] `docs/AI_ASSISTANT.md` - System prompt context ("You are a workout logging assistant for MyLiftPal")
+- [ ] `scripts/seed-demo-data.ts` - Demo user emails (`@myliftpal.com`)
+- [ ] `scripts/import-wger-exercises.ts` - Script comments
+- [ ] `supabase/scripts/update_releases.sql` - Feedback placeholder text
 - [ ] Search entire codebase for "myliftpal" (case-insensitive)
 - [ ] Search entire codebase for "MyLiftPal"
 
@@ -112,21 +121,26 @@ When creating a fresh Supabase project (recommended for production):
 - [ ] Wait for project to fully provision (~2 minutes)
 
 ### 2. Run Database Migrations
-Run these SQL scripts in order via Supabase SQL Editor:
+Run the complete setup script via Supabase SQL Editor:
 
-1. [ ] **Enums & Types** - Create custom types (equipment_type, training_block_status, etc.)
-2. [ ] **Tables** - Create all tables (profiles, muscle_groups, exercises, training_blocks, etc.)
-3. [ ] **RLS Policies** - Enable Row Level Security on all tables
-4. [ ] **Indexes** - Add performance indexes (see recommended indexes below)
-5. [ ] **Seed Data** - Insert muscle_groups and exercises reference data
+1. [ ] Open `supabase/scripts/setup_complete.sql`
+2. [ ] Copy the entire content
+3. [ ] Paste into Supabase SQL Editor and run
 
-SQL scripts location: `specs/architecture.md` contains schema, or export from current project:
-```sql
--- Export from current Supabase project:
--- Dashboard > Database > Schema > Export
-```
+This single script handles:
+- Creating all tables and types
+- Setting up Row Level Security (RLS) policies
+- Creating performance indexes
+- Seeding initial data (muscle groups, core exercises, changelog)
 
-### 3. Configure Authentication
+### 3. Populate Expanded Exercise Library
+Since the 600+ exercises were imported via API, you need to run the import scripts for the new project:
+
+1. [ ] **Import Exercises:** `npx tsx scripts/import-wger-exercises.ts`
+2. [ ] **Import Images:** `npx tsx scripts/import-exercise-images.ts`
+3. [ ] **Seed Demo Data:** `npx tsx scripts/seed-demo-data.ts` (Optional, for testing)
+
+### 4. Configure Authentication
 - [ ] Enable Email auth provider
 - [ ] Configure email templates (confirmation, password reset)
 - [ ] Set Site URL and Redirect URLs

@@ -34,7 +34,7 @@
 | **Language** | TypeScript | 5.x | Type safety, better tooling |
 | **Styling** | Tailwind CSS | 3.x | Utility-first, rapid development |
 | **Database** | Supabase (PostgreSQL) | Latest | Hosted Postgres, real-time, auth built-in |
-| **Offline Storage** | Dexie.js (IndexedDB) | 4.x | Promise-based IndexedDB wrapper |
+| **Offline Storage** | idb (IndexedDB) | 8.x | Lightweight Promise-based IndexedDB wrapper |
 | **PWA** | @vite-pwa/sveltekit | Latest | Service worker, manifest generation |
 | **Hosting** | Vercel | - | Excellent SvelteKit support, free tier |
 | **Voice** | Web Speech API | Native | Browser-native, no dependencies |
@@ -46,7 +46,7 @@
 {
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
-    "dexie": "^4.0.0",
+    "idb": "^8.0.0",
     "lucide-svelte": "^0.300.0"
   },
   "devDependencies": {
@@ -70,7 +70,7 @@
 │                         Client (Browser)                         │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
-│  │  SvelteKit  │  │  Dexie.js   │  │  Service Worker (PWA)   │  │
+│  │  SvelteKit  │  │     idb     │  │  Service Worker (PWA)   │  │
 │  │     App     │  │  IndexedDB  │  │  Cache + Offline        │  │
 │  └──────┬──────┘  └──────┬──────┘  └───────────┬─────────────┘  │
 │         │                │                     │                 │
@@ -108,29 +108,20 @@ src/
 │   │   ├── volume/          # Volume tracking (VolumeBar, VolumeIndicator)
 │   │   └── layout/          # Layout components (Nav, Header)
 │   │
-│   ├── stores/              # Svelte stores for state management
-│   │   ├── auth.ts          # Authentication state
-│   │   ├── workout.ts       # Active workout state
-│   │   ├── training-block.ts     # Training Block data
-│   │   └── offline.ts       # Offline/sync state
+│   ├── stores/              # Svelte stores (State & Logic)
+│   │   ├── auth.svelte.ts   # Authentication state
+│   │   ├── workoutStore.svelte.ts # Active workout logic
+│   │   ├── trainingBlockStore.svelte.ts # Training Block logic
+│   │   └── offlineStore.svelte.ts # Offline/sync logic
 │   │
-│   ├── services/            # Business logic & API calls
+│   ├── db/                  # Database clients
 │   │   ├── supabase.ts      # Supabase client
-│   │   ├── exercises.ts     # Exercise CRUD
-│   │   ├── training-blocks.ts    # Training Block CRUD
-│   │   ├── workouts.ts      # Workout logging
-│   │   ├── volume.ts        # Volume calculations
-│   │   ├── progression.ts   # Progression algorithm
-│   │   └── sync.ts          # Offline sync logic
+│   │   └── indexedDB.ts     # IDB wrapper & schema
 │   │
-│   ├── db/                  # Dexie.js offline database
-│   │   ├── schema.ts        # IndexedDB schema
-│   │   └── operations.ts    # Offline CRUD operations
-│   │
-│   ├── utils/               # Utility functions
+│   ├── utils/               # Utility functions (Business Logic)
 │   │   ├── time.ts          # Time estimation
-│   │   ├── format.ts        # Formatting helpers
-│   │   └── validation.ts    # Input validation
+│   │   ├── volume.ts        # Volume calculations
+│   │   └── progression.ts   # Progression algorithm
 │   │
 │   └── types/               # TypeScript types
 │       ├── database.ts      # Database types (generated)
@@ -185,14 +176,14 @@ src/
         │   Online Path        │ │   Offline Path    │
         │                      │ │                   │
         │  ┌────────────────┐  │ │ ┌───────────────┐ │
-        │  │ Supabase API   │  │ │ │  Dexie.js     │ │
+        │  │ Supabase API   │  │ │ │     idb       │ │
         │  │ (immediate)    │  │ │ │  IndexedDB    │ │
         │  └────────────────┘  │ │ └───────────────┘ │
         │                      │ │         │        │
         │                      │ │         ▼        │
         │                      │ │ ┌───────────────┐ │
-        │                      │ │ │  Sync Queue   │ │
-        │                      │ │ │  (pending)    │ │
+        │                      │ │ │  PendingSets  │ │
+        │                      │ │ │  (store)      │ │
         │                      │ │ └───────────────┘ │
         └──────────────────────┘ └───────────────────┘
                     │                      │
@@ -487,22 +478,6 @@ CREATE TABLE public.user_volume_targets (
   UNIQUE(user_id, muscle_group_id)
 );
 
--- ============================================
--- SYNC QUEUE
--- ============================================
-CREATE TABLE public.sync_queue (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  operation TEXT NOT NULL CHECK (operation IN ('INSERT', 'UPDATE', 'DELETE')),
-  table_name TEXT NOT NULL,
-  record_id UUID NOT NULL,
-  payload JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  synced_at TIMESTAMPTZ,
-  error TEXT
-);
-
-CREATE INDEX idx_sync_queue_user ON public.sync_queue(user_id, synced_at);
 ```
 
 ### 3.3 Seed Data
@@ -1259,38 +1234,20 @@ export const load = async ({ url }) => {
 
 ## 6. Offline Architecture
 
-### 6.1 Dexie.js Schema
+### 6.1 IDB Schema
 
 ```typescript
 // lib/db/schema.ts
-import Dexie, { Table } from 'dexie';
+import { openDB, type IDBPDatabase } from 'idb';
 
-interface CachedWorkout {
-  id: string;
-  sessionId: string;
-  workoutDayId: string;
+interface OfflineWorkoutDay {
+  dayId: string;
+  blockId: string;
+  dayName: string;
   weekNumber: number;
-  exercises: CachedExercise[];
-  cachedAt: Date;
-}
-
-interface CachedExercise {
-  slotId: string;
-  exerciseId: string;
-  name: string;
-  primaryMuscle: string;
-  secondaryMuscles: { muscle: string; weight: number }[];
-  targetSets: number;
-  repRangeMin: number;
-  repRangeMax: number;
-  restSeconds: number;
-  previousSessions: PreviousSet[][];  // Last 4 sessions
-}
-
-interface PreviousSet {
-  weight: number;
-  reps: number;
-  rir: number;
+  exercises: OfflineExerciseSlot[];
+  previousSets: Record<string, PreviousSetData>;
+  downloadedAt: number;
 }
 
 interface PendingSet {
@@ -1301,98 +1258,67 @@ interface PendingSet {
   setNumber: number;
   weight: number;
   reps: number;
-  rir?: number;
-  completed: boolean;
-  loggedAt: Date;
-  synced: boolean;
+  rir: number | null;
+  createdAt: number;
 }
 
-interface SyncQueueItem {
-  id: string;
-  operation: 'INSERT' | 'UPDATE' | 'DELETE';
-  table: string;
-  recordId: string;
-  payload: any;
-  createdAt: Date;
-  retryCount: number;
-}
+const DB_NAME = 'myliftpal-offline';
+const DB_VERSION = 2;
 
-class MyLiftPalDB extends Dexie {
-  cachedWorkouts!: Table<CachedWorkout, string>;
-  pendingSets!: Table<PendingSet, string>;
-  syncQueue!: Table<SyncQueueItem, string>;
-  
-  constructor() {
-    super('MyLiftPalDB');
-    
-    this.version(1).stores({
-      cachedWorkouts: 'id, sessionId, cachedAt',
-      pendingSets: 'id, sessionId, synced',
-      syncQueue: 'id, createdAt'
-    });
-  }
+export async function getDB() {
+  return openDB(DB_NAME, DB_VERSION, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains('workoutDays')) {
+        db.createObjectStore('workoutDays', { keyPath: 'dayId' });
+      }
+      if (!db.objectStoreNames.contains('pendingSets')) {
+        const store = db.createObjectStore('pendingSets', { keyPath: 'id' });
+        store.createIndex('bySession', 'sessionId');
+      }
+    }
+  });
 }
-
-export const db = new MyLiftPalDB();
 ```
 
-### 6.2 Offline Service
+### 6.2 Offline Store (Logic)
 
 ```typescript
-// lib/services/offline.ts
-import { db } from '$lib/db/schema';
-import { supabase } from './supabase';
+// lib/stores/offlineStore.svelte.ts
+import { getDB, savePendingSet, getPendingSets } from '$lib/db/indexedDB';
+import { supabase } from '$lib/db/supabase';
 
-export const offlineService = {
-  async downloadTodaysWorkout(sessionId: string) {
-    // Fetch workout structure
-    const { data: session } = await supabase
-      .from('workout_sessions')
-      .select(`
-        *,
-        workout_day:workout_days(
-          *,
-          exercise_slots(
-            *,
-            exercise:exercises(*)
-          )
-        )
-      `)
-      .eq('id', sessionId)
-      .single();
-    
-    if (!session) throw new Error('Session not found');
-    
-    // Fetch previous sessions for each exercise
-    const exerciseIds = session.workout_day.exercise_slots.map(
-      (s: any) => s.exercise_id
-    );
-    
-    const { data: previousSets } = await supabase
-      .from('logged_sets')
-      .select('*, workout_sessions!inner(week_number)')
-      .in('exercise_id', exerciseIds)
-      .eq('workout_sessions.training_block_id', session.training_block_id)
-      .order('logged_at', { ascending: false })
-      .limit(100);
-    
-    // Transform and cache
-    const cachedWorkout = transformToCachedWorkout(session, previousSets);
-    await db.cachedWorkouts.put(cachedWorkout);
-    
-    return cachedWorkout;
-  },
+function createOfflineStore() {
+  let isOnline = $state(navigator.onLine);
   
-  async logSetOffline(set: Omit<PendingSet, 'synced'>) {
-    await db.pendingSets.add({
-      ...set,
-      synced: false
-    });
+  async function queueSet(set: PendingSet) {
+    await savePendingSet(set);
+  }
+
+  async function syncPendingSets() {
+    if (!isOnline) return;
     
-    await db.syncQueue.add({
-      id: crypto.randomUUID(),
-      operation: 'INSERT',
-      table: 'logged_sets',
+    const pending = await getPendingSets();
+    for (const set of pending) {
+      // Direct upsert to Supabase
+      const { error } = await supabase
+        .from('logged_sets')
+        .upsert({
+          session_id: set.sessionId,
+          exercise_slot_id: set.exerciseSlotId,
+          // ... mapping fields
+          completed: true
+        });
+        
+      if (!error) {
+        await deletePendingSet(set.id);
+      }
+    }
+  }
+
+  return { isOnline, queueSet, syncPendingSets };
+}
+```
+
       recordId: set.id,
       payload: set,
       createdAt: new Date(),
@@ -1402,78 +1328,13 @@ export const offlineService = {
   
   async syncPendingChanges() {
     const pending = await db.syncQueue
-      .where('retryCount')
-      .below(5)
-      .toArray();
-    
-    for (const item of pending) {
-      try {
-        if (item.operation === 'INSERT') {
-          await supabase.from(item.table).insert(item.payload);
-        } else if (item.operation === 'UPDATE') {
-          await supabase
-            .from(item.table)
-            .update(item.payload)
-            .eq('id', item.recordId);
-        }
-        
-        await db.syncQueue.delete(item.id);
-        
-        if (item.table === 'logged_sets') {
-          await db.pendingSets.update(item.recordId, { synced: true });
-        }
-      } catch (error) {
-        await db.syncQueue.update(item.id, {
-          retryCount: item.retryCount + 1
-        });
-      }
-    }
-  },
-  
-  async getCachedWorkout(sessionId: string) {
-    return db.cachedWorkouts.get(sessionId);
-  },
-  
-  async isWorkoutCached(sessionId: string) {
-    const workout = await db.cachedWorkouts.get(sessionId);
-    if (!workout) return false;
-    
-    // Check if cache is less than 24 hours old
-    const ageMs = Date.now() - workout.cachedAt.getTime();
-    return ageMs < 24 * 60 * 60 * 1000;
-  }
-};
-```
+
 
 ### 6.3 Online/Offline Detection
 
 ```typescript
-// lib/stores/offline.ts
-import { writable, derived } from 'svelte/store';
-import { offlineService } from '$lib/services/offline';
-
-export const isOnline = writable(navigator.onLine);
-
-// Listen for online/offline events
-if (typeof window !== 'undefined') {
-  window.addEventListener('online', () => {
-    isOnline.set(true);
-    // Trigger sync when coming back online
-    offlineService.syncPendingChanges();
-  });
-  
-  window.addEventListener('offline', () => {
-    isOnline.set(false);
-  });
-}
-
-export const pendingSyncCount = writable(0);
-
-// Update pending count periodically
-async function updatePendingCount() {
-  const count = await db.syncQueue.count();
-  pendingSyncCount.set(count);
-}
+// lib/stores/offlineStore.svelte.ts (continued)
+// ... see offlineStore implementation above for state management
 ```
 
 ---
@@ -1504,138 +1365,25 @@ async function updatePendingCount() {
 ### 7.2 Workout Store Example
 
 ```typescript
-// lib/stores/workout.ts
-import { writable, derived } from 'svelte/store';
-import type { LoggedSet, WorkoutSession, ExerciseSlot } from '$lib/types';
-import { workoutService } from '$lib/services/workouts';
-import { offlineService } from '$lib/services/offline';
-import { isOnline } from './offline';
+// lib/stores/workoutStore.svelte.ts
+import { offline } from '$lib/stores/offlineStore.svelte';
 
-interface WorkoutState {
-  session: WorkoutSession | null;
-  exercises: ExerciseSlot[];
-  loggedSets: Map<string, LoggedSet[]>;  // slotId -> sets
-  loading: boolean;
-  error: string | null;
-}
-
-function createWorkoutStore() {
-  const { subscribe, set, update } = writable<WorkoutState>({
-    session: null,
-    exercises: [],
-    loggedSets: new Map(),
-    loading: false,
-    error: null
-  });
-  
-  return {
-    subscribe,
-    
-    async startWorkout(sessionId: string) {
-      update(s => ({ ...s, loading: true }));
-      
-      try {
-        let data;
-        const online = get(isOnline);
-        
+// ... inside the store logic
         if (online) {
           data = await workoutService.getSession(sessionId);
         } else {
-          data = await offlineService.getCachedWorkout(sessionId);
+          // offlineStore handles retrieval
+          data = await offline.getOfflineDay(sessionId);
         }
-        
-        set({
-          session: data.session,
-          exercises: data.exercises,
-          loggedSets: new Map(),
-          loading: false,
-          error: null
-        });
-      } catch (error) {
-        update(s => ({
-          ...s,
-          loading: false,
-          error: 'Failed to load workout'
-        }));
-      }
-    },
-    
-    async logSet(slotId: string, setData: Partial<LoggedSet>) {
-      const setId = crypto.randomUUID();
-      const newSet: LoggedSet = {
-        id: setId,
-        session_id: get(this).session!.id,
-        exercise_slot_id: slotId,
-        set_number: (get(this).loggedSets.get(slotId)?.length ?? 0) + 1,
-        ...setData,
-        logged_at: new Date().toISOString()
-      };
-      
-      // Optimistic update
-      update(s => {
-        const sets = s.loggedSets.get(slotId) ?? [];
-        s.loggedSets.set(slotId, [...sets, newSet]);
-        return { ...s };
-      });
-      
-      // Persist
-      const online = get(isOnline);
+
+// ... logSet logic
       if (online) {
         await workoutService.logSet(newSet);
       } else {
-        await offlineService.logSetOffline(newSet);
+        await offline.queueSet({
+            // ... map to PendingSet
+        });
       }
-    },
-    
-    async completeWorkout(feedback: WorkoutFeedback) {
-      const session = get(this).session;
-      if (!session) return;
-      
-      const online = get(isOnline);
-      if (online) {
-        await workoutService.completeSession(session.id, feedback);
-      } else {
-        await offlineService.queueSessionComplete(session.id, feedback);
-      }
-      
-      set({
-        session: null,
-        exercises: [],
-        loggedSets: new Map(),
-        loading: false,
-        error: null
-      });
-    }
-  };
-}
-
-export const workout = createWorkoutStore();
-
-// Derived stores
-export const currentExercise = derived(workout, $workout => {
-  // Find first exercise with incomplete sets
-  for (const exercise of $workout.exercises) {
-    const sets = $workout.loggedSets.get(exercise.id) ?? [];
-    if (sets.length < exercise.targetSets) {
-      return exercise;
-    }
-  }
-  return null;
-});
-
-export const workoutProgress = derived(workout, $workout => {
-  const totalSets = $workout.exercises.reduce(
-    (sum, ex) => sum + ex.targetSets, 0
-  );
-  const completedSets = Array.from($workout.loggedSets.values())
-    .reduce((sum, sets) => sum + sets.filter(s => s.completed).length, 0);
-  
-  return {
-    completed: completedSets,
-    total: totalSets,
-    percentage: totalSets > 0 ? (completedSets / totalSets) * 100 : 0
-  };
-});
 ```
 
 ---
@@ -1656,7 +1404,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'supabase': ['@supabase/supabase-js'],
-          'dexie': ['dexie'],
+          'idb': ['idb'],
         }
       }
     }

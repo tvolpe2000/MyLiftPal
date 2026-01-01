@@ -6,6 +6,7 @@
 	import { workoutSettings } from '$lib/stores/workoutSettings.svelte';
 	import { offline } from '$lib/stores/offlineStore.svelte';
 	import InstallPrompt from '$lib/components/pwa/InstallPrompt.svelte';
+	import ReloadPrompt from '$lib/components/pwa/ReloadPrompt.svelte';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 
@@ -56,3 +57,4 @@
 
 <!-- PWA install prompt for better offline experience -->
 <InstallPrompt />
+<ReloadPrompt />
